@@ -4,9 +4,6 @@
 [submodule "vendor/chrono"]
 	path = vendor/chrono
 	url = https://github.com/a327ex/chrono.git
-[submodule "vendor/rxi"]
-	path = vendor/rxi
-	url = https://github.com/rxi/classic.git
 [submodule "vendor/classic"]
 	path = vendor/classic
 	url = https://github.com/rxi/classic.git
