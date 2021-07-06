@@ -13,3 +13,6 @@
 [submodule "vendor/Moses"]
 	path = vendor/Moses
 	url = https://github.com/Yonaba/Moses.git
+[submodule "vendor/stalker"]
+	path = vendor/stalker
+	url = https://github.com/a327ex/STALKER-X.git

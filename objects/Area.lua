@@ -19,9 +19,9 @@ function Area:draw()
    for _, object in ipairs(self.objects) do object:draw() end
 end
 
-function Area:addObject(object_type, x, y, opts)
+function Area:addGameObject(object_type, x, y, opts)
    local opts = opts or {}
-   local object = _G[object_type](self, x or 0, y or 0, opts)
+   local object = object_type(self, x or 0, y or 0, opts)
    table.insert(self.objects, object)
    return object
 end
