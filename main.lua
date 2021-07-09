@@ -1,13 +1,9 @@
-Object = require 'vendor/classic/classic'
-Input = require('vendor/boipushy/Input')
-Timer = require('vendor/hump/timer')
-Camera = require('vendor/stalker/Camera')
-M = require('vendor/Moses/moses')
+require 'engine'
+require 'play'
+require 'player'
 
-require('objects/Area')
-require('objects/Stage')
-require('objects/GameObject')
-require('objects/Player')
+local play
+local main_canvas
 
 function love.load()
    resize(10)
@@ -19,22 +15,16 @@ function love.load()
 
    image = love.graphics.newImage('sprites8.png')
 
-   input = Input()
-   timer = Timer()
-   camera = Camera(32, 32, 64, 64)
+   font = love.graphics.newFont('PICO-8.ttf', 5)
+   font:setFilter('nearest', 'nearest');
+   love.graphics.setFont(font)
 
-   input:bind('x', function() camera:shake(8, 1, 60) end)
-
-   current_room = nil
-
-   addRoom(Stage)
+   play = Play()
 end
 
 function love.update(dt)
-   timer:update(dt)
-   camera:update(dt)
-
-   if current_room then current_room:update(dt) end
+   Input.update(dt)
+   play:update(dt)
 end
 
 function love.draw()
@@ -42,7 +32,9 @@ function love.draw()
    love.graphics.setCanvas(main_canvas)
    love.graphics.clear()
 
-   if current_room then current_room:draw() end
+   -- DRAW --
+   play:draw()
+   ----
 
    love.graphics.setCanvas()
 
@@ -50,10 +42,6 @@ function love.draw()
    love.graphics.setBlendMode('alpha', 'premultiplied')
    love.graphics.draw(main_canvas, 0, 0, 0, sx, sy)
    love.graphics.setBlendMode('alpha')
-end
-
-function addRoom(room_type)
-   current_room = room_type()
 end
 
 function resize(s)
