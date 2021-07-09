@@ -10,4 +10,5 @@ function Rectangle:init(x, y, w, h, r)
    self.vertices = { x1, y1, x2, y2, x3, y3, x4, y4 }
    self:get_size()
    self:get_bounds()
+   self:get_centroid()
 end

@@ -5,9 +5,17 @@ dbg = ''
 function Play:init()
    self.main = Group()
 
-   self.player = Player{group = self.main, 
-                        x = gw/2,
-                        y = gh/2}
+   self.rider = Rider{ group = self.main }
+
+   self.player = Player{group = self.main,
+                        collide_x = function (body)
+                           return not self.rider:is_colliding_with_point(body.cx, body.cy)
+                        end,
+                        collide_y = function (body)
+                           return not self.rider:is_colliding_with_point(body.cx, body.cy)
+                        end,
+                        x = 1,
+                        y = 9}
 end
 
 function Play:update(dt)
@@ -18,6 +26,7 @@ function Play:draw()
    self.main:draw()
 
    if dbg then
+      love.graphics.setColor(1,0,0,1)
       love.graphics.print(dbg, 0, 0)
    end
 end

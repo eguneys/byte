@@ -15,6 +15,6 @@ function GameObject:update_game_object(dt)
    if self.body then self:update_physics(dt) end
 end
 
-function GameObject:draw_game_object()
-   if self.body then self:draw_physics() end
+function GameObject:draw_game_object(color, line_width)
+   if self.body then self:draw_physics(color, line_width) end
 end

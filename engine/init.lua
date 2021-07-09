@@ -1,5 +1,6 @@
 local path = ...
 
+require(path .. '.external')
 require(path .. '.object')
 require(path .. '.input')
 require(path .. '.graphics.graphics')
@@ -12,4 +13,5 @@ require(path .. '.game.machine')
 require(path .. '.math.math')
 require(path .. '.math.spring')
 require(path .. '.math.polygon')
+require(path .. '.math.line')
 require(path .. '.math.rectangle')

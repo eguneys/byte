@@ -1,5 +1,7 @@
 require 'engine'
+require 'regularpolygon'
 require 'play'
+require 'rider'
 require 'actions'
 require 'player'
 
