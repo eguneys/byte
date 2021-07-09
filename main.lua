@@ -1,6 +1,8 @@
 require 'engine'
 require 'play'
+require 'actions'
 require 'player'
+
 
 local play
 local main_canvas
@@ -23,7 +25,7 @@ function love.load()
 end
 
 function love.update(dt)
-   Input.update(dt)
+   Input:update(dt)
    play:update(dt)
 end
 

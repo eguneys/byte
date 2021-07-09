@@ -1,32 +1,38 @@
-local keys = { 'left', 
-               'right',
-               'up',
-               'down',
-               'x',
-               'c' }
+XInput = Object:extend()
+function XInput:init()
+   self._btn = {}
+end
 
-function input_update()
-   for input,t in pairs(Input.btn) do
+function XInput:update()
+   for input,t in pairs(self._btn) do
       if (t ~= 0) then
-         Input.btn[input] = t + 1
+         self._btn[input] = t + 1
       end
    end
 end
 
-Input = {
-   btn={},
-   update=input_update
-}
-
-
-function love.keypressed(key)
-   if (not Input.btn[key] or Input.btn[key] <= 0) then
-      Input.btn[key] = 1
+function XInput:press(key)
+   if (not self._btn[key] or self._btn[key] <= 0) then
+      self._btn[key] = 1
    end
 end
 
-function love.keyreleased(key)
-   if (Input.btn[key]) then
-      Input.btn[key] = -10
+function XInput:release(key)
+   if (self._btn[key]) then
+      self._btn[key] = -10
    end
+end
+
+function XInput:btn(key)
+   return self._btn[key] or 0
+end
+
+Input=XInput()
+
+function love.keypressed(key)
+   Input:press(key)
+end
+
+function love.keyreleased(key)
+   Input:release(key)
 end

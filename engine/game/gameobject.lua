@@ -12,6 +12,7 @@ end
 
 function GameObject:update_game_object(dt)
    self.spring:update(dt)
+   if self.body then self:update_physics(dt) end
 end
 
 function GameObject:draw_game_object()

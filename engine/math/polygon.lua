@@ -42,4 +42,5 @@ function Polygon:translate(x, y)
       self.vertices[i] = self.vertices[i] + x
       self.vertices[i+1] = self.vertices[i+1] + y
    end
+   self:get_bounds()
 end
