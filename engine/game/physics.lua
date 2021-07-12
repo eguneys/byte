@@ -1,13 +1,6 @@
-function nocollide(body, physics)
-   return false
-end
-
 Physics = Object:extend()
 function Physics:set_as_rectangle(ox, oy, w, h)
    if not self.group then error("The GameObject must have a group") end
-
-   self.collide_x = self.collide_x or nocollide
-   self.collide_y = self.collide_y or nocollide
 
    self.dx, self.dy = 0, 0
    self.rem_x, self.rem_y = 0, 0
@@ -15,6 +8,14 @@ function Physics:set_as_rectangle(ox, oy, w, h)
    self.shape = Rectangle(ox, oy, w, h)
    self:get_body()
    return self;
+end
+
+function Physics:collide_x (body)
+   return false
+end
+
+function Physics:collide_y (body)
+   return false
 end
 
 function Physics:get_body()
@@ -53,7 +54,7 @@ end
 function Physics:move_x(amount, step)
    for i=1,amount do
       self.x = self.x + step
-      if self.collide_x(self:get_body()) then
+      if self:collide_x(self:get_body()) then
          self.x = self.x - step
          self.dx = 0
          break
@@ -64,7 +65,7 @@ end
 function Physics:move_y(amount, step)
    for i=1,amount do
       self.y = self.y + step
-      if self.collide_y(self:get_body()) then
+      if self:collide_y(self:get_body()) then
          self.y = self.y - step
          self.dy = 0
          break

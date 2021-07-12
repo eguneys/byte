@@ -25,6 +25,10 @@ function Walk:init(prop)
    self.machine:set_current_key('rest')
 end
 
+function Walk:is_rest()
+   return self.machine.current_key == 'rest'
+end
+
 function Walk:request()
    if self.machine.current_key == 'rest' then
       self.machine:transition('pace')

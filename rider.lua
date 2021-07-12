@@ -12,11 +12,11 @@ function Rider:init(args)
       63,9
    }
 
-   print('3 9 '..(self.body:is_colliding_with_point(3,9)and"yes"or"no"))
+   --print('3 9 '..(self.body:is_colliding_with_point(3,9)and"yes"or"no"))
 end
 
 function Rider:update(dt)
-
+   
 end
 
 function Rider:draw()
@@ -25,4 +25,8 @@ end
 
 function Rider:is_colliding_with_point(x, y)
    return self.body:is_colliding_with_point(x, y)
+end
+
+function Rider:is_colliding_with_point_inside(x, y)
+   return self.body:colliding_with_point_inside(x, y)
 end

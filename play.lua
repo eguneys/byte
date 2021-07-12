@@ -5,20 +5,28 @@ dbg = ''
 function Play:init()
    self.main = Group()
 
-   self.rider = Rider{ group = self.main }
+   self:reset()
+
+end
+
+function Play:reset()
+
+   self.main = Group()
+
+   self.volride = Volride { group = self.main }
 
    self.player = Player{group = self.main,
-                        collide_x = function (body)
-                           return not self.rider:is_colliding_with_point(body.cx, body.cy)
-                        end,
-                        collide_y = function (body)
-                           return not self.rider:is_colliding_with_point(body.cx, body.cy)
-                        end,
+                        volride=self.volride,
                         x = 1,
-                        y = 9}
+                        y = 8}
 end
 
 function Play:update(dt)
+
+   if Input:btn('c') > 0 then
+      self:reset()
+   end
+
    self.main:update(dt)
 end
 

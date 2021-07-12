@@ -80,3 +80,7 @@ function Polygon:scale(sx, sy, ox, oy)
    self:get_bounds()
    self:get_centroid()
 end
+
+function Polygon:colliding_with_point_inside(x, y)
+   return mlib.polygon.checkPoint(x, y, self.vertices)
+end

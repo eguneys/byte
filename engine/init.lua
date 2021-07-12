@@ -1,5 +1,6 @@
 local path = ...
 
+require(path .. '.datastructures.table')
 require(path .. '.external')
 require(path .. '.object')
 require(path .. '.input')
@@ -11,7 +12,9 @@ require(path .. '.game.physics')
 require(path .. '.game.trigger')
 require(path .. '.game.machine')
 require(path .. '.math.math')
+require(path .. '.math.vector')
 require(path .. '.math.spring')
 require(path .. '.math.polygon')
+require(path .. '.math.chain')
 require(path .. '.math.line')
 require(path .. '.math.rectangle')

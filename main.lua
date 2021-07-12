@@ -1,7 +1,9 @@
 require 'engine'
 require 'regularpolygon'
+require 'dynamicline'
 require 'play'
 require 'rider'
+require 'volride'
 require 'actions'
 require 'player'
 
