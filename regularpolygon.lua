@@ -30,15 +30,32 @@ function RegularPolygon:split(vertices)
    local a, b = math.min(_a, _b),
    math.max(_a, _b)
 
-   if a ~= _a then
-      vertices = table.reverse2(vertices)
-   end
-
    local va, vb = {}, {}
 
    if a == -1 or b == -1 then
       return nil, nil
    end
+
+
+   local _rx, _ry,
+      _rt1, _rt2,
+      _rt3, _rt4 = self.vertices[a],
+      self.vertices[a+1],
+      vertices[1],
+      vertices[2],
+      vertices[#vertices-1],
+      vertices[#vertices]
+
+      print(table.tostring(self.vertices))
+      print(a, _rx, _ry, _rt1, _rt2, _rt3, _rt4)
+
+      if a~= _a or 
+         (a == b and
+             Vector(_rt1, _rt2):distance(Vector(_rx, _ry)) >
+          Vector(_rt3, _rt4):distance(Vector(_rx, _ry))) then
+            vertices = table.reverse2(vertices)
+      end
+
 
    for i=1,a,2 do
       table.push(va, self.vertices[i])

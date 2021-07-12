@@ -6,7 +6,7 @@ require 'rider'
 require 'volride'
 require 'actions'
 require 'player'
-
+require 'enemies'
 
 local play
 local main_canvas

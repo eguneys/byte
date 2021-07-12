@@ -10,6 +10,8 @@ function Volride:init(args)
       63,9
    }
 
+   self.target = { x = 0, y = 0 }
+
    self.body = nil
 end
 
@@ -33,12 +35,24 @@ end
 function Volride:stop()
    local va, vb = self.ground:split(self.body.vertices)
 
-   self.ground = RegularPolygon(vb)
+   if Polygon(va):colliding_with_point_inside(self.target.x, self.target.y) then
+      self.ground = RegularPolygon(va)
+      --print(table.tostring(va))
+   else
+      self.ground = RegularPolygon(vb)
+   end
+
+
+
    self.body = nil
 end
 
 function Volride:extend(x, y)
    return self.body:extend(x, y)
+end
+
+function Volride:set_target(x, y)
+   self.target = { x=x, y=y }
 end
 
 function Volride:update(dt)

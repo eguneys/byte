@@ -3,10 +3,7 @@ Play = Object:extend()
 dbg = ''
 
 function Play:init()
-   self.main = Group()
-
    self:reset()
-
 end
 
 function Play:reset()
@@ -19,6 +16,11 @@ function Play:reset()
                         volride=self.volride,
                         x = 1,
                         y = 8}
+
+   self.tank = Tank{group = self.main,
+                    volride=self.volride,
+                    x = 10,
+                    y = 10 }
 end
 
 function Play:update(dt)
