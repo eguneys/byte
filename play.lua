@@ -19,8 +19,8 @@ function Play:reset()
 
    self.tank = Tank{group = self.main,
                     volride=self.volride,
-                    x = 10,
-                    y = 10 }
+                    x = 12,
+                    y = 12 }
 end
 
 function Play:update(dt)

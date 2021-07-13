@@ -25,12 +25,15 @@ function love.load()
    font:setFilter('nearest', 'nearest');
    love.graphics.setFont(font)
 
+   trigger = Trigger()
+   random = Random()
    play = Play()
 end
 
 function love.update(dt)
    Input:update(dt)
    play:update(dt)
+   trigger:update(dt)
 end
 
 function love.draw()

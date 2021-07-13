@@ -72,6 +72,7 @@ function MachineState:enter()
       self.hooks.begin()
    end
    if self.delay > 0 then
+      self.target = {i=0}
       self.t:tween(self.delay, self.target, {i=1}, self.method, function ()
                       if self.hooks.after then
                          self.hooks.after()

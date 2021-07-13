@@ -10,10 +10,10 @@ function Player:init(args)
 
    self.velocity = Group()
 
-   self.walk_left = self.velocity:add(Walk(function (v) self.dx=v*-1 end))
-   self.walk_right = self.velocity:add(Walk(function(v) self.dx=v end))
-   self.walk_up = self.velocity:add(Walk(function(v) self.dy=v*-1 end))
-   self.walk_down = self.velocity:add(Walk(function(v) self.dy=v end))
+   self.walk_left = self.velocity:add(Walk{prop =function (v) self.dx=v*-1 end })
+   self.walk_right = self.velocity:add(Walk{prop=function(v) self.dx=v end})
+   self.walk_up = self.velocity:add(Walk{prop=function(v) self.dy=v*-1 end})
+   self.walk_down = self.velocity:add(Walk{prop=function(v) self.dy=v end})
 
    self.allow_dash = false
    self:get_grounded_lazy()

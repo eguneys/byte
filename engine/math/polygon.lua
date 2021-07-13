@@ -84,3 +84,7 @@ end
 function Polygon:colliding_with_point_inside(x, y)
    return mlib.polygon.checkPoint(x, y, self.vertices)
 end
+
+function Polygon:is_polygon_inside(p)
+   return mlib.polygon.isPolygonCompletelyInside(p.vertices, self.vertices)
+end

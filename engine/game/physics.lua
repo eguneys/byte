@@ -10,6 +10,14 @@ function Physics:set_as_rectangle(ox, oy, w, h)
    return self;
 end
 
+function Physics:reshape(w, h)
+   self.shape = Rectangle(self.shape.x,
+                          self.shape.y,
+                          w,
+                          h)
+   self:get_body()
+end
+
 function Physics:collide_x (body)
    return false
 end
@@ -19,12 +27,14 @@ function Physics:collide_y (body)
 end
 
 function Physics:get_body()
-   if not self.body then
+   if not self.body or self.body.w ~= self.shape.w then
       self.body = Rectangle(self.shape.x,
                             self.shape.y,
                             self.shape.w,
                             self.shape.h)
    end
+   
+
    self.body:move_to(self.x,
                      self.y)
 

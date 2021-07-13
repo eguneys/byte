@@ -73,3 +73,19 @@ function Chain:is_colliding_with_line(line)
     end
   end
 end
+
+
+-- If loop is true, returns true if the polygon is colliding with the polygon.
+-- If loop is false, returns true if the polygon is colliding with any of the chain's lines.
+-- colliding = chain:is_colliding_with_polygon(polygon)
+function Chain:is_colliding_with_polygon(polygon)
+  if self.loop then
+    return mlib.polygon.isPolygonInside(self.vertices, polygon.vertices) or mlib.polygon.isPolygonInside(polygon.vertices, self.vertices)
+  else
+    for i = 1, #self.vertices-2, 2 do
+      if mlib.polygon.getSegmentIntersection(self.vertices[i], self.vertices[i+1], self.vertices[i+2], self.vertices[i+3], polygon.vertices) then
+        return true
+      end
+    end
+  end
+end
