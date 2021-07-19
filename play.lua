@@ -3,37 +3,17 @@ Play = Object:extend()
 dbg = ''
 
 function Play:init()
-   self:reset()
-end
 
-function Play:reset()
-
-   self.main = Group()
-
-   self.volride = Volride { group = self.main }
-
-   self.player = Player{group = self.main,
-                        volride=self.volride,
-                        x = 1,
-                        y = 8}
-
-   self.tank = Tank{group = self.main,
-                    volride=self.volride,
-                    x = 12,
-                    y = 12 }
+   self.rooms = Rooms()
 end
 
 function Play:update(dt)
-
-   if Input:btn('c') > 0 then
-      self:reset()
-   end
-
-   self.main:update(dt)
+   self.rooms:update(dt)
 end
 
 function Play:draw()
-   self.main:draw()
+
+   self.rooms:draw()
 
    if dbg then
       love.graphics.setColor(1,0,0,1)

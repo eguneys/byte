@@ -3,13 +3,23 @@ function Jump:init(args)
 
    self.prop = args.prop
 
+   local JumpDuration = ticks.fifth
+   local MaxJumpHeight = 4 * 5 + 4 * 5
+   local JumpV = MaxJumpHeight / JumpDuration
+
+   local FallV = MaxJumpHeight / ticks.second
+
    self.machine = Machine{
       accel=MachineState{
-         delay=ticks.third,
-         method=math.quad_in,
+         delay=JumpDuration,
+         method=math.quad_out,
          hooks= {
             update=function(i)
-               self.prop(-i)
+               if i < 0.5 then
+                  self.prop(-JumpV*i*2)
+               else
+                  self.prop(-JumpV*(1-i)*2)
+               end
             end
          },
          next_key='hang'
@@ -26,8 +36,8 @@ function Jump:init(args)
       rest=MachineState{
          delay=0,
          hooks= {
-            begin=function(i)
-               self.prop(0.5)
+            update=function(i)
+               self.prop(FallV)
             end            
          }
       }
@@ -40,6 +50,13 @@ function Jump:request()
       self.machine:transition('accel')
    end
 end
+
+function Jump:cut()
+   if self.machine.current_key == 'accel' then
+      self.machine:transition('rest')
+   end
+end
+
 function Jump:update(dt)
    self.machine:update(dt)
 end
@@ -48,16 +65,26 @@ Walk = Object:extend()
 function Walk:init(args)
    self.prop = args.prop
 
-   local VIn60 = args.speed or 0.5
+   local V = 50 / ticks.second
 
    self.machine = Machine{
       pace=MachineState{
-         delay=0,
+         delay=ticks.second,
          hooks= {
             update=function(i)
-               self.prop(VIn60)
+               self.prop(V)
             end
-         }
+         },
+         next_key='cool'
+      },
+      cool=MachineState{
+         delay=ticks.second,
+         hooks={
+            begin=function()
+               self.prop(0)
+            end
+         },
+         next_key='rest'
       },
       rest=MachineState{
          delay=0,

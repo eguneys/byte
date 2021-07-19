@@ -1,6 +1,7 @@
 local path = ...
 
 require(path .. '.datastructures.table')
+require(path .. '.datastructures.string')
 require(path .. '.external')
 require(path .. '.object')
 require(path .. '.input')
@@ -9,6 +10,8 @@ require(path .. '.game.gameobject')
 require(path .. '.game.ticks')
 require(path .. '.game.group')
 require(path .. '.game.physics')
+require(path .. '.game.grid')
+require(path .. '.game.editor')
 require(path .. '.game.trigger')
 require(path .. '.game.machine')
 require(path .. '.math.math')

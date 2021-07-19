@@ -1,12 +1,9 @@
 require 'engine'
-require 'regularpolygon'
-require 'dynamicline'
+require 'levels'
+require 'rooms'
 require 'play'
-require 'rider'
-require 'volride'
 require 'actions'
 require 'player'
-require 'enemies'
 
 local play
 local main_canvas

@@ -18,6 +18,10 @@ function graphics.shape(shape, color, line_width, ...)
    love.graphics.setColor(r, g, b, a)
 end
 
+function graphics.rectangle(x, y, w, h, rx, ry, color, line_width)
+   graphics.shape('rectangle', color, line_width, x, y, w, h, rx, ry)
+end
+
 function graphics.polygon(vertices, color, line_width)
    graphics.shape('polygon', color, line_width, vertices)
 end

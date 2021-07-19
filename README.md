@@ -1,0 +1,25 @@
+- [ ] Chance
+- [ ] Puzzle
+- [ ] Backtrack
+- [ ] Sound
+
+
+- [+] Level Load
+- [+] Solid Tiles, Collisions
+- [+] Jump
+- [ ] Camera Follow
+- [ ] Room Transition
+- [ ] Wall Cling
+- [ ] Fall Damage
+- [ ] Attack, Slash
+- [ ] Story - Dialog
+- [ ] Level 1
+- [ ] Animations
+- [ ] Background
+- [ ] Spikes, place seldom
+- [ ] Restart - Spawn - Die
+- [ ] Checkpoints
+- [ ] Rare Items
+- [ ] Obstacles
+- [ ] Moving, Vanishing, Jumping, platforms
+- [ ] 

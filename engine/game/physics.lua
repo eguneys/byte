@@ -18,12 +18,16 @@ function Physics:reshape(w, h)
    self:get_body()
 end
 
-function Physics:collide_x (body)
+function Physics:collide_base(body)
    return false
 end
 
+function Physics:collide_x (body)
+   return self:collide_base(body)
+end
+
 function Physics:collide_y (body)
-   return false
+   return self:collide_base(body)
 end
 
 function Physics:get_body()
@@ -41,17 +45,19 @@ function Physics:get_body()
    return self.body
 end
 
-function Physics:update_physics()
-   self.rem_x = self.rem_x + self.dx
-   local step = math.sign(self.dx)
+function Physics:update_physics(dt)
+   local dx = self.dx * dt
+   self.rem_x = self.rem_x + dx
+   local step = math.sign(dx)
    local amount = math.floor(math.abs(self.rem_x))
    if amount > 0 then
       self:move_x(amount, step)
    end
    self.rem_x = self.rem_x - amount * step
 
-   self.rem_y = self.rem_y + self.dy
-   local step = math.sign(self.dy)
+   local dy = self.dy * dt
+   self.rem_y = self.rem_y + dy
+   local step = math.sign(dy)
    local amount = math.floor(math.abs(self.rem_y))
    if amount > 0 then
       self:move_y(amount, step)
