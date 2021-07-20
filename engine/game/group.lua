@@ -1,5 +1,6 @@
 Group = Object:extend()
-function Group:init()
+function Group:init(camera)
+   self.camera = camera
    self.objects = {}
    return self
 end
@@ -17,9 +18,13 @@ function Group:update(dt)
 end
 
 function Group:draw()
+   if self.camera then self.camera:attach(scroll_x, scroll_y) end
+
    for _, object in pairs(self.objects) do
       object:draw()
    end
+
+   if self.camera then self.camera:detach() end
 end
 
 function Group:add(object)

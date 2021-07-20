@@ -18,6 +18,7 @@ function Player:init(args)
    self.t = Trigger()
 
    self:get_grounded()
+   self:get_camera_target()
 
 end
 
@@ -30,6 +31,15 @@ function Player:get_grounded()
                                                 self.body.w,
                                                 self.body.h)
 
+end
+
+function Player:get_camera_target()
+   if not self.camera_target then
+      self.camera_target = Vector(0, 0)
+   end
+
+   self.camera_target.x = self.x - 32
+   self.camera_target.y = self.y - 32
 end
 
 function Player:set_room(room)
@@ -48,6 +58,7 @@ function Player:update(dt)
 
    self:update_game_object(dt)
 
+   self:get_camera_target()
    self:get_grounded()
 
    self.grace_time_on = self.grounded

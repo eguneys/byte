@@ -4,7 +4,7 @@ function Jump:init(args)
    self.prop = args.prop
 
    local JumpDuration = ticks.fifth
-   local MaxJumpHeight = 4 * 5 + 4 * 5
+   local MaxJumpHeight = 4 * 5 + 2 * 5
    local JumpV = MaxJumpHeight / JumpDuration
 
    local FallV = MaxJumpHeight / ticks.second
@@ -69,7 +69,7 @@ function Walk:init(args)
 
    self.machine = Machine{
       pace=MachineState{
-         delay=ticks.second,
+         delay=0,
          hooks= {
             update=function(i)
                self.prop(V)
