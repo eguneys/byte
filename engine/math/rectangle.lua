@@ -1,6 +1,10 @@
 Rectangle = Object:extend()
 Rectangle:implement(Polygon)
 function Rectangle:init(x, y, w, h, r)
+   self:reshape(x, y, w, h, r)
+end
+
+function Rectangle:reshape(x, y, w, h, r)
    r = r or 0
    self.x, self.y, self.w, self.h, self.r = x, y, w, h, r
    local x1, y1 = x, y

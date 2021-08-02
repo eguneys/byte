@@ -6,12 +6,20 @@ function Player:init(args)
    
    self:set_as_rectangle(0, 0, 4, 4)
 
-   self.room = args.room
+   self.rooms = args.rooms
 
    self.velocity = Group()
-   
-   self.walk_left = self.velocity:add(Walk{prop =function (v) self.dx=v*-1 end })
-   self.walk_right = self.velocity:add(Walk{prop=function(v) self.dx=v end})
+
+   self.dampen_x = 1
+
+   self.walk_left = self.velocity:add(
+      Walk{prop =function (v)
+              self.dx=v*-1*self.dampen_x
+   end })
+   self.walk_right = self.velocity:add(
+      Walk{prop=function(v) 
+              self.dx=v*self.dampen_x
+   end})
 
    self.jump = self.velocity:add(Jump{prop=function(v) self.dy = v end})
 
@@ -26,10 +34,16 @@ function Player:get_grounded()
 
    self.was_grounded = self.grounded or false
 
-   self.grounded = self.room.grid:collide_solid(self.body.x,
-                                                self.body.y+1,
-                                                self.body.w,
-                                                self.body.h)
+   self.grounded = self.rooms.room:collide_solid(self.body.x,
+                                           self.body.y+1,
+                                           self.body.w,
+                                           self.body.h)
+
+   if self.grounded then
+      self.dampen_x = 1
+   else
+      self.dampen_x = math.lerp(0.01, self.dampen_x, 0.3)
+   end
 
 end
 
@@ -38,19 +52,16 @@ function Player:get_camera_target()
       self.camera_target = Vector(0, 0)
    end
 
-   self.camera_target.x = self.x - 32
-   self.camera_target.y = self.y - 32
-end
-
-function Player:set_room(room)
-   self.room = room
+   self.camera_target.x = self.body.cx
+   self.camera_target.y = self.body.cy
 end
 
 function Player:collide_base(body)
-   return self.room.grid:collide_solid(body.x,
-                                       body.y,
-                                       body.w,
-                                       body.h)
+   return self.rooms.room:collide_solid(
+      body.x,
+      body.y,
+      body.w,
+      body.h)
 
 end
 
@@ -58,8 +69,32 @@ function Player:update(dt)
 
    self:update_game_object(dt)
 
+   local d_left, d_right = self.body.cx - self.rooms.room.rect.x,
+   self.body.cx - self.rooms.room.rect.x2
+
+   if d_left < 0 then
+      self.rooms:check_room_transition()
+      self.x = self.x - d_left
+   end
+   if d_right > 0 then
+      self.rooms:check_room_transition()
+      self.x = self.x - d_right
+   end
+   self:get_body()
+
+
    self:get_camera_target()
    self:get_grounded()
+
+   if self.dampen_x <= 0.51 then
+      self.dampen_x = math.lerp(0.1, self.dampen_x, 0.4)
+   elseif self.dampen_x <= 0.81 then
+      self.dampen_x = math.lerp(0.05, self.dampen_x, 0.5)
+   elseif self.dampen_x < 1 then
+      self.dampen_x = math.lerp(0.1, self.dampen_x, 0.8)
+   end
+
+   print(self.dampen_x)
 
    self.grace_time_on = self.grounded
 
@@ -92,7 +127,6 @@ function Player:update(dt)
    end
 
    self.velocity:update(dt)
-
 end
 
 function Player:draw()

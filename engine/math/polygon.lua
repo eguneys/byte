@@ -88,3 +88,8 @@ end
 function Polygon:is_polygon_inside(p)
    return mlib.polygon.isPolygonCompletelyInside(p.vertices, self.vertices)
 end
+
+function Polygon:is_colliding_with_polygon(polygon)
+   return mlib.polygon.isPolygonInside(self.vertices, polygon.vertices) or
+      mlib.polygon.isPolygonInside(polygon.vertices, self.vertices)
+end

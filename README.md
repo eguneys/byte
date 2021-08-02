@@ -1,8 +1,9 @@
 - [ ] Chance
 - [ ] Puzzle
+- [ ] Combat
+- [ ] Enemy AI
 - [ ] Backtrack
 - [ ] Sound
-
 
 - [+] Level Load
 - [+] Solid Tiles, Collisions
@@ -11,15 +12,16 @@
 - [ ] Room Transition
 - [ ] Wall Cling
 - [ ] Fall Damage
-- [ ] Attack, Slash
+- [ ] Attack, Slash,
 - [ ] Story - Dialog
 - [ ] Level 1
 - [ ] Animations
-- [ ] Background
+- [ ] Background Foreground Parallax
+- [ ] Trail, Particles, Screen Shake
 - [ ] Spikes, place seldom
 - [ ] Restart - Spawn - Die
 - [ ] Checkpoints
 - [ ] Rare Items
 - [ ] Obstacles
 - [ ] Moving, Vanishing, Jumping, platforms
-- [ ] 
+

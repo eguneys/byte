@@ -3,7 +3,7 @@ function Jump:init(args)
 
    self.prop = args.prop
 
-   local JumpDuration = ticks.fifth
+   local JumpDuration = ticks.third
    local MaxJumpHeight = 4 * 5 + 2 * 5
    local JumpV = MaxJumpHeight / JumpDuration
 

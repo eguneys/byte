@@ -39,8 +39,8 @@ function Physics:get_body()
    end
    
 
-   self.body:move_to(self.x,
-                     self.y)
+   self.body:move_to(self.x + self.shape.x,
+                     self.y + self.shape.y)
 
    return self.body
 end

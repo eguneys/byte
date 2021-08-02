@@ -10,6 +10,9 @@ function Grid:init(celw, celh, w, h)
 end
 
 function Grid:get(celx, cely, v)
+   if celx > self.w then
+      return nil
+   end
    if v == nil then
       return self.data[self:_key(celx, cely)]
    else
@@ -22,11 +25,14 @@ function Grid:_key(celx, cely)
    return cely * self.w + celx
 end
 
-function Grid:draw_solid()
+function Grid:draw_solid(x, y)
    for i=1,self.w do
       for j =1,self.h do
          if self:get(i, j) then
-            graphics.rectangle((i-1)*self.celw, (j-1)*self.celh, self.celw, self.celh, 0, 0, {
+            graphics.rectangle(x + (i-1)*self.celw, 
+                               y + (j-1)*self.celh, 
+                               self.celw, 
+                               self.celh, 0, 0, {
                                   r=1,
                                   g=0,
                                   b=0,
@@ -40,8 +46,8 @@ end
 function Grid:collide_solid(x, y, w, h)
    for i=x,x+w do
       for j=y,y+h do
-         if self:get(math.ceil(i/self.celw),
-                     math.ceil(j/self.celh)) then
+         if self:get(math.floor(i/self.celw) + 1,
+                     math.floor(j/self.celh) + 1) then
             return true
          end            
       end
