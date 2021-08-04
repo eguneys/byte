@@ -1,29 +1,30 @@
-## Story
 
-Aliens has been conducting experiments on different life forms, by manipulating their memory, and leaving them on a planet for observation.
+~~ ## Story ~~
 
-Gogo wakes up after a long sleep with no memory.
+~~ Aliens has been conducting experiments on different life forms, by manipulating their memory, and leaving them on a planet for observation. ~~
 
-- i am hungry.
-- arrows
-- X
+~~ Gogo wakes up after a long sleep with no memory. ~~
 
-Gogo looks around in hunger, to see vegetation, rocks and little sentients.
-Sentients move around eating vegetation.
+~~ - i am hungry. ~~
+~~ - arrows ~~
+~~ - X ~~
 
-Stops near a rock
+~~ Gogo looks around in hunger, to see vegetation, rocks and little sentients. ~~
+~~ Sentients move around eating vegetation. ~~
 
-- c and c
+~~ Stops near a rock ~~
 
-Gogo picks up a rock and sentient avoids Gogo, which quickly throws to a sentient to kill it, it drops food and splashes some liquid.
+~~ - c and c ~~
 
-- ugh..
+~~ Gogo picks up a rock and sentient avoids Gogo, which quickly throws to a sentient to kill it, it drops food and splashes some liquid. ~~
 
-Gogo eats the food, the liquid sticks to his body and makes a trail.
+~~ - ugh.. ~~
 
-- so sticky.
+~~ Gogo eats the food, the liquid sticks to his body and makes a trail. ~~
 
-Gogo explores more to find a river, river washes up the liquid, and no more trail.
+~~ - so sticky. ~~
+
+~~ Gogo explores more to find a river, river washes up the liquid, and no more trail. ~~
 
 
 ## Current
@@ -55,7 +56,6 @@ Gogo explores more to find a river, river washes up the liquid, and no more trai
 - [ ] ~Fall Damage~
 - [ ] Attack, Slash,
 - [ ] Story - Dialog
-- [ ] Non interruptive dialogs
 - [ ] Level 1
 - [ ] Animations
 - [ ] Background Foreground Parallax

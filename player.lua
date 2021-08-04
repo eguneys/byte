@@ -128,25 +128,31 @@ function Player:check_room_transition()
    if to then
       self.room = to
       self.rooms:check_room_transition(to)
+      return true
    end
+   return false
 end
 
 function Player:update(dt)
 
    self:update_game_object(dt)
 
-   local d_left, d_right = self.body.cx - self.room.rect.x,
-   self.body.cx - self.room.rect.x2
-
-   if d_left < 0 then
-      self:check_room_transition()
-      self.x = self.x - d_left
+   local d_left, d_right = self.body.x - self.room.rect.x,
+   self.body.x2 - self.room.rect.x2
+   if d_left <= 0 then
+      if self:check_room_transition() then
+         self.x = self.x + d_left - 4
+      else
+         self.x = self.x - d_left
+      end
    end
-   if d_right > 0 then
-      self:check_room_transition()
-      self.x = self.x - d_right
+   if d_right >= 0 then
+      if self:check_room_transition() then
+         self.x = self.x + d_right + 4
+      else
+         self.x = self.x - d_right - 1
+      end
    end
-
    self:get_body()
 
 

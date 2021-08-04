@@ -14,16 +14,16 @@ function Room:init(rooms, rect, def, name)
 
    self.main = Group()
 
-   self.grid = Grid(4, 4, 40, 40)
+   self.grid = Grid(4, 4, 80, 80)
 
    self.ch(function (x, y, c)
          if c == 'V' then
-            Sentient{
-               room=self,
-               group=self.main,
-               x = x,
-               y = y
-            }
+            -- Sentient{
+            --    room=self,
+            --    group=self.main,
+            --    x = x,
+            --    y = y
+            -- }
          end
          if c == 'S' then
             self.grid:get(x,
@@ -114,13 +114,6 @@ end
 
 function Rooms:update(dt)
 
-   if self.in_transition > 0 then
-      self.in_transition = self.in_transition - dt
-   else
-      self.main:update(dt)
-   end
-   self.main.camera:update(dt)
-
    if self.room_to_transition then
       self.main.camera:set_bounds(self.room_to_transition.rect.x,
                                   self.room_to_transition.rect.y,
@@ -129,6 +122,13 @@ function Rooms:update(dt)
       self.room_to_transition = nil
       self.in_transition = ticks.sixth
    end
+
+   if self.in_transition > 0 then
+      self.in_transition = self.in_transition - dt
+   else
+      self.main:update(dt)
+   end
+   self.main.camera:update(dt)
 end
 
 function Rooms:draw()

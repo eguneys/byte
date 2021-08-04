@@ -56,13 +56,6 @@ function Sentient:get_grounded()
                                            self.body.y+1,
                                            self.body.w,
                                            self.body.h)
-
-   if self.grounded then
-      self.dampen_x = 1
-   else
-      self.dampen_x = math.lerp(0.01, self.dampen_x, 0.3)
-   end
-
 end
 
 function Sentient:collide_base(body)
@@ -79,14 +72,6 @@ function Sentient:update(dt)
 
    self:get_grounded()
    self:get_facing()
-
-   if self.dampen_x <= 0.51 then
-      self.dampen_x = math.lerp(0.1, self.dampen_x, 0.4)
-   elseif self.dampen_x <= 0.81 then
-      self.dampen_x = math.lerp(0.05, self.dampen_x, 0.5)
-   elseif self.dampen_x < 1 then
-      self.dampen_x = math.lerp(0.1, self.dampen_x, 0.8)
-   end
 
    self.t:update(dt)
 
