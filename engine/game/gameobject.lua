@@ -10,6 +10,10 @@ function GameObject:init_game_object(args)
    return self
 end
 
+function GameObject:remove_game_object()
+   if self.group then self.group:remove(self) end
+end
+
 function GameObject:update_game_object(dt)
    self.spring:update(dt)
    if self.body then self:update_physics(dt) end

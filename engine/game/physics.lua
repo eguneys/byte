@@ -30,6 +30,10 @@ function Physics:collide_y (body)
    return self:collide_base(body)
 end
 
+function Physics:just_collided(x, y)
+   
+end
+
 function Physics:get_body()
    if not self.body or self.body.w ~= self.shape.w then
       self.body = Rectangle(self.shape.x,
@@ -73,6 +77,7 @@ function Physics:move_x(amount, step)
       if self:collide_x(self:get_body()) then
          self.x = self.x - step
          self.dx = 0
+         self:just_collided(step, 0)
          break
       end
    end
@@ -84,6 +89,7 @@ function Physics:move_y(amount, step)
       if self:collide_y(self:get_body()) then
          self.y = self.y - step
          self.dy = 0
+         self:just_collided(0, step)
          break
       end
    end

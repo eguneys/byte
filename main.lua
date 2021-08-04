@@ -6,6 +6,7 @@ require 'play'
 require 'actions'
 require 'player'
 require 'dialogue'
+require 'sentients'
 
 local play
 local main_canvas

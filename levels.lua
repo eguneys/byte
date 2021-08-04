@@ -33,9 +33,9 @@ local l1b = [[
 ................................
 ...............................S
 ................................
-.@..............................
-SSSSSSSSSSSSSSSSSSSSSSS..SSSSSSS
-SSSSSSSSSSSSSSSSSSSSSSS..SSSSSSS
+.@...........................V..
+SSSSSSSSSSSSSSSSS.........V..SSS
+SSSSSSSSSSSSSSSSSSSSS....SSSSSSS
 ]]
 
 local l1c = [[

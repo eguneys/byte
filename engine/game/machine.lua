@@ -38,7 +38,7 @@ function Machine:withCurrent(fn)
    if self.current_key and self.states[self.current_key] then
       fn(self.states[self.current_key])
    else
-      error("No Current State Key " .. key)
+      error("No Current State Key " .. (self.current_key or ''))
    end
 end
 

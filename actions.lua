@@ -1,3 +1,68 @@
+Throw = Object:extend()
+function Throw:init(args)
+   self.prop = args.prop
+
+   local JumpDuration = ticks.third
+   local MaxJumpHeight = 4 * 3
+   local JumpV = MaxJumpHeight / JumpDuration
+
+   local FallV = MaxJumpHeight / ticks.second
+
+   local MaxThrowWidth = 4 * 4 + 2 * 4
+   local ThrowV = MaxThrowWidth / JumpDuration
+
+   self.machine = Machine{
+      accel=MachineState{
+         delay=JumpDuration,
+         method=math.quad_in_out,
+         hooks= {
+            update=function(i)
+               if i < 0.5 then
+                  self.prop(ThrowV * i * 2, -JumpV*i*2)
+               else
+                  self.prop(ThrowV * i * 2, -JumpV*(1-i)*2)
+               end
+            end
+         },
+         next_key='hang'
+      },
+      hang=MachineState{
+         delay=ticks.lengths,
+         hooks= {
+            update=function(i)
+               self.prop(ThrowV, 0)
+            end
+         },
+         next_key='rest'
+      },
+      rest=MachineState{
+         delay=0,
+         hooks= {
+            update=function(i)
+               self.prop(0, JumpV)
+            end            
+         }
+      }
+   }
+
+   self.machine:set_current_key('rest')
+end
+
+function Throw:is_throw()
+   return self.machine.current_key ~= 'rest'
+end
+
+function Throw:request()
+   if self.machine.current_key == 'rest' then
+      self.machine:transition('accel')
+   end
+end
+
+function Throw:update(dt)
+   self.machine:update(dt)
+end
+
+
 Jump = Object:extend()
 function Jump:init(args)
 

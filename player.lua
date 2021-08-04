@@ -7,6 +7,16 @@ function Player:init(args)
    self:set_as_rectangle(2, 2, 3, 6)
 
    self.rooms = args.rooms
+   self.room = args.room
+
+   local x, y
+
+   self.room.ch(function(x,y,c)
+         if (c == '@') then
+            self.x = self.room.rect.x + (x - 1) * 4
+            self.y = self.room.rect.y + (y - 1) * 4 - 5
+         end
+   end)
 
    self.velocity = Group()
 
@@ -28,6 +38,7 @@ function Player:init(args)
    self:get_facing()
    self:get_grounded()
    self:get_camera_target()
+   self:get_pickup_target()
    self:get_jumping()
 
    self.a_idle = anim8.newAnimation(g8(1, 1), ticks.second)
@@ -64,7 +75,7 @@ function Player:get_grounded()
 
    self.was_grounded = self.grounded or false
 
-   self.grounded = self.rooms.room:collide_solid(self.body.x,
+   self.grounded = self.room:collide_solid(self.body.x,
                                            self.body.y+1,
                                            self.body.w,
                                            self.body.h)
@@ -77,6 +88,15 @@ function Player:get_grounded()
 
 end
 
+function Player:get_pickup_target()
+   if not self.pickup_target then
+      self.pickup_target = Vector(0, 0)
+   end
+
+   self.pickup_target.x = self.body.cx
+   self.pickup_target.y = self.body.cy
+end
+
 function Player:get_camera_target()
    if not self.camera_target then
       self.camera_target = Vector(0, 0)
@@ -87,7 +107,7 @@ function Player:get_camera_target()
 end
 
 function Player:collide_base(body)
-   return self.rooms.room:collide_solid(
+   return self.room:collide_solid(
       body.x,
       body.y,
       body.w,
@@ -98,7 +118,7 @@ end
 function Player:check_room_transition()
    local to
    for _, room in pairs(self.rooms.rooms) do
-      if room ~= self.rooms.room then
+      if room ~= self.room then
          if room.rect:is_colliding_with_polygon(self.body) then
             to = room
             break
@@ -106,6 +126,7 @@ function Player:check_room_transition()
       end
    end
    if to then
+      self.room = to
       self.rooms:check_room_transition(to)
    end
 end
@@ -114,8 +135,8 @@ function Player:update(dt)
 
    self:update_game_object(dt)
 
-   local d_left, d_right = self.body.cx - self.rooms.room.rect.x,
-   self.body.cx - self.rooms.room.rect.x2
+   local d_left, d_right = self.body.cx - self.room.rect.x,
+   self.body.cx - self.room.rect.x2
 
    if d_left < 0 then
       self:check_room_transition()
@@ -125,10 +146,12 @@ function Player:update(dt)
       self:check_room_transition()
       self.x = self.x - d_right
    end
+
    self:get_body()
 
 
    self:get_camera_target()
+   self:get_pickup_target()
    self:get_grounded()
    self:get_facing()
    self:get_jumping()
@@ -171,8 +194,13 @@ function Player:update(dt)
       self.jump:cut()
    end
 
-   if Input:btn('c') == 1 then
-      
+   if Input:btn('c') == 2 then
+      if self.o_pickup then
+         self.o_pickup:request_throw()
+         self.o_pickup = nil
+      else
+         self.o_pickup = self.rooms:pickup()
+      end
    end
 
    self.velocity:update(dt)
@@ -214,20 +242,99 @@ Rock:implement(GameObject)
 Rock:implement(Physics)
 function Rock:init(args)
    self:init_game_object(args)
-   self:set_as_rectangle(0, 0, 4, 4)
+   self:set_as_rectangle(2, 2, 4, 4)
 
+
+   self.rooms = args.rooms
    self.player = args.player
+   self.i_t = 0
+
+   self.throw = Throw{prop= function(vx, vy)
+                         self.dx=vx*self.throw_dir
+                         self.dy=vy
+                     end}
+
+   self.a_idle = anim8.newAnimation(g8(1, 2), ticks.second)
+   self.a_throw = anim8.newAnimation(g8('2-4', 2), ticks.lengths/3)
+   self.a_crush = anim8.newAnimation(g8('5-7', 2), ticks.sixth/3, 'pauseAtEnd')
+
+   self.a_current = self.a_idle
+
+   self.ing_throw = false
+
+   self._t = Trigger()
+end
+
+function Rock:collide_base(body)
+   return self.room:collide_solid(
+      body.x,
+      body.y,
+      body.w,
+      body.h) or
+      self.room:collide_bounds(body.x, body.y)
+end
+
+function Rock:just_collided()
+   self.ing_crash = self.ing_throw
+   self.ing_throw = false
+   self._t:after(ticks.sixth, function()
+                    self.dead = true
+   end)
+end
+
+function Rock:request_throw()
+   self.throw_dir = self.player.facing + math.sign(self.player.dx) * 0.5
+   self.ing_throw = true
+   self.room = self.player.room
+   self.throw:request()
+   self.player = nil
 end
 
 function Rock:update(dt)
-   self:update_game_object(dt)
+
+   self._t:update(dt)
+   self.i_t = self.i_t + dt
 
    if self.player then
-      self.x = math.lerp(1, self.x, self.player.x)
-      self.y = math.lerp(1, self.y, self.player.y)
+      local px, py = 
+         self.player.pickup_target.x + (self.player.facing == -1 and -self.player.body.w or 1),
+      self.player.pickup_target.y - self.body.h / 2
+
+      px = px - self.shape.x
+      py = py - self.shape.y
+
+      self.x = math.lerp(1, self.x, px)
+      self.y = math.lerp(1, self.y, py + 
+                            (0.5 + 0.4 * math.sign(self.player.dy * -1)) * 
+                            math.sin(self.i_t * 2*math.pi/
+                                        (ticks.second + 
+                                            ticks.half * math.sign(self.player.dy))))
    end
+
+   self:update_game_object(dt)
+
+   if self.ing_throw then
+      self.throw:update(dt)
+   elseif self.ing_crash then
+      self.dx = 0
+      self.dy = 0
+   end
+
+   if self.ing_crash then
+      if self.a_current ~= self.a_crush then
+         self.a_current = self.a_crush
+      end
+   elseif self.ing_throw then
+      if self.a_current ~= self.a_throw then
+         self.a_current = self.a_throw
+         self.a_current:gotoFrame(1)
+      end
+   end
+
+   self.a_current:update(dt)
 end
 
 function Rock:draw()
-   self:draw_game_object()
+   local x, y = math.floor(self.x), math.floor(self.y)
+   self.a_current:draw(sprites, x, y)
 end

@@ -1,7 +1,8 @@
 Room = Object:extend()
 Room:implement(GameObject)
-function Room:init(rooms, rect, def)
+function Room:init(rooms, rect, def, name)
 
+   self.name = name
    self.rooms = rooms
 
    self.rect = Rectangle(rect.x * 32,
@@ -16,9 +17,20 @@ function Room:init(rooms, rect, def)
    self.grid = Grid(4, 4, 40, 40)
 
    self.ch(function (x, y, c)
-         if c == 'S' or c == 'R' then
+         if c == 'V' then
+            Sentient{
+               room=self,
+               group=self.main,
+               x = x,
+               y = y
+            }
+         end
+         if c == 'S' then
             self.grid:get(x,
-                          y, true)
+                          y, 'S')
+         end
+         if c == 'R' then
+            self.grid:get(x, y, 'R')
          end
    end)
 end
@@ -34,6 +46,10 @@ function Room:collide_solid(x, y, w, h)
       w, h)
 end
 
+function Room:collide_bounds(x,y)
+   return not self.rect:colliding_with_point_inside(x, y)
+end
+
 function Room:draw()
    self.grid:draw_solid(self.rect.x, self.rect.y)
    self.main:draw()
@@ -45,37 +61,35 @@ function Rooms:init()
    self.main = Group(Camera(0, 0, 64, 64))
 
    self:load_rooms()
-   self:set_player(0, 0)
+   self:set_player(self.rooms[1])
 
    self.in_transition = 0
 
 end
 
-function Rooms:set_player(x, y)
+function Rooms:set_player(room)
 
    self.player = Player{group = self.main,
                         rooms = self,
-                        x,
-                        y}
+                        room = room}
 
    self.main.camera.lerp.x = 0.5
    self.main.camera.lerp.y = 0.5
    self.main.camera:follow(self.player.camera_target)
 
-   self.room.ch(function(x,y,c)
-         if (c == '@') then
-            print(y)
-            self.player.x = self.room.rect.x + (x - 1) * 4
-            self.player.y = self.room.rect.y + (y - 1) * 4 - 5
-         end
-   end)
-
-   self:pickup()
+   self.main.camera:set_bounds(self.player.room.rect.x,
+                               self.player.room.rect.y,
+                               self.player.room.rect.w,
+                               self.player.room.rect.h)
 end
 
 function Rooms:pickup()
-   Rock{group=self.main,
-        player=self.player}
+   if self.player.grounded then
+      return Rock{group=self.main,
+                  rooms=self,
+                  player=self.player}
+   end
+return nil
 end
 
 function Rooms:load_rooms()
@@ -84,19 +98,10 @@ function Rooms:load_rooms()
    local levelDef = editor.levelParser(rooms, levels[1])
    for name,roomRect in pairs(levelDef) do
       local roomDef = rooms[name]
-      local room = Room(self, roomRect, roomDef)
+      local room = Room(self, roomRect, roomDef, name)
       table.push(self.rooms, room)
       self.main:add(room)
-
-      if name=='B' then
-         self.room = room
-      end
    end
-
-   self.main.camera:set_bounds(self.room.rect.x,
-                               self.room.rect.y,
-                               self.room.rect.w,
-                               self.room.rect.h)
 
    self.room_to_transition = nil
 end
@@ -117,13 +122,12 @@ function Rooms:update(dt)
    self.main.camera:update(dt)
 
    if self.room_to_transition then
-      self.room = self.room_to_transition
+      self.main.camera:set_bounds(self.room_to_transition.rect.x,
+                                  self.room_to_transition.rect.y,
+                                  self.room_to_transition.rect.w,
+                                  self.room_to_transition.rect.h)
       self.room_to_transition = nil
       self.in_transition = ticks.sixth
-      self.main.camera:set_bounds(self.room.rect.x,
-                                  self.room.rect.y,
-                                  self.room.rect.w,
-                                  self.room.rect.h)
    end
 end
 

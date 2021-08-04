@@ -12,6 +12,7 @@ function Camera:init(x, y, w, h)
    self.scroll = Vector(0, 0)
 
    self:set_deadzone()
+   self:set_bounds(0, 0, 0, 0)
 end
 
 function Camera:follow(target)

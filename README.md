@@ -9,12 +9,13 @@ Gogo wakes up after a long sleep with no memory.
 - X
 
 Gogo looks around in hunger, to see vegetation, rocks and little sentients.
+Sentients move around eating vegetation.
 
 Stops near a rock
 
 - c and c
 
-Gogo picks up a rock and throws to a sentient to kill it, it drops food and splashes some liquid.
+Gogo picks up a rock and sentient avoids Gogo, which quickly throws to a sentient to kill it, it drops food and splashes some liquid.
 
 - ugh..
 
