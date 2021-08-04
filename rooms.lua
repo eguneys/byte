@@ -1,6 +1,8 @@
 Room = Object:extend()
 Room:implement(GameObject)
-function Room:init(rect, def)
+function Room:init(rooms, rect, def)
+
+   self.rooms = rooms
 
    self.rect = Rectangle(rect.x * 32,
                          rect.y * 32,
@@ -14,12 +16,11 @@ function Room:init(rect, def)
    self.grid = Grid(4, 4, 40, 40)
 
    self.ch(function (x, y, c)
-         if (c == 'S') then
+         if c == 'S' or c == 'R' then
             self.grid:get(x,
                           y, true)
          end
    end)
-
 end
 
 function Room:update(dt)
@@ -68,6 +69,13 @@ function Rooms:set_player(x, y)
             self.player.y = self.room.rect.y + (y - 1) * 4 - 5
          end
    end)
+
+   self:pickup()
+end
+
+function Rooms:pickup()
+   Rock{group=self.main,
+        player=self.player}
 end
 
 function Rooms:load_rooms()
@@ -76,7 +84,7 @@ function Rooms:load_rooms()
    local levelDef = editor.levelParser(rooms, levels[1])
    for name,roomRect in pairs(levelDef) do
       local roomDef = rooms[name]
-      local room = Room(roomRect, roomDef)
+      local room = Room(self, roomRect, roomDef)
       table.push(self.rooms, room)
       self.main:add(room)
 

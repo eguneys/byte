@@ -171,6 +171,10 @@ function Player:update(dt)
       self.jump:cut()
    end
 
+   if Input:btn('c') == 1 then
+      
+   end
+
    self.velocity:update(dt)
 
    if self.ing_jump_lift then
@@ -203,4 +207,27 @@ end
 function Player:draw()
    local x, y = math.floor(self.x), math.floor(self.y)
    self.a_current:draw(sprites, x, y)
+end
+
+Rock = Object:extend()
+Rock:implement(GameObject)
+Rock:implement(Physics)
+function Rock:init(args)
+   self:init_game_object(args)
+   self:set_as_rectangle(0, 0, 4, 4)
+
+   self.player = args.player
+end
+
+function Rock:update(dt)
+   self:update_game_object(dt)
+
+   if self.player then
+      self.x = math.lerp(1, self.x, self.player.x)
+      self.y = math.lerp(1, self.y, self.player.y)
+   end
+end
+
+function Rock:draw()
+   self:draw_game_object()
 end
