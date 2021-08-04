@@ -1,9 +1,11 @@
 require 'engine'
+require 'shared'
 require 'levels'
 require 'rooms'
 require 'play'
 require 'actions'
 require 'player'
+require 'dialogue'
 
 local play
 local main_canvas
@@ -16,11 +18,13 @@ function love.load()
 
    main_canvas = love.graphics.newCanvas(gw, gh)
 
-   image = love.graphics.newImage('sprites8.png')
+   sprites = love.graphics.newImage('assets/sprites.png')
+   g8 = anim8.newGrid(8, 8, 128, 128)
+   
 
-   font = love.graphics.newFont('PICO-8.ttf', 5)
-   font:setFilter('nearest', 'nearest');
-   love.graphics.setFont(font)
+   font = Font('PICO-8', 5)
+
+   love.graphics.setBackgroundColor(0, 55, 55)
 
    trigger = Trigger()
    random = Random()

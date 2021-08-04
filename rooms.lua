@@ -44,11 +44,18 @@ function Rooms:init()
    self.main = Group(Camera(0, 0, 64, 64))
 
    self:load_rooms()
+   self:set_player(0, 0)
+
+   self.in_transition = 0
+
+end
+
+function Rooms:set_player(x, y)
 
    self.player = Player{group = self.main,
                         rooms = self,
-                        x = 0,
-                        y = 0}
+                        x,
+                        y}
 
    self.main.camera.lerp.x = 0.5
    self.main.camera.lerp.y = 0.5
@@ -56,13 +63,11 @@ function Rooms:init()
 
    self.room.ch(function(x,y,c)
          if (c == '@') then
+            print(y)
             self.player.x = self.room.rect.x + (x - 1) * 4
-            self.player.y = self.room.rect.y + (y - 1) * 4
-          end
+            self.player.y = self.room.rect.y + (y - 1) * 4 - 5
+         end
    end)
-
-   self.in_transition = 0
-
 end
 
 function Rooms:load_rooms()
@@ -74,9 +79,12 @@ function Rooms:load_rooms()
       local room = Room(roomRect, roomDef)
       table.push(self.rooms, room)
       self.main:add(room)
+
+      if name=='B' then
+         self.room = room
+      end
    end
 
-   self.room = self.rooms[1]
    self.main.camera:set_bounds(self.room.rect.x,
                                self.room.rect.y,
                                self.room.rect.w,
@@ -85,16 +93,7 @@ function Rooms:load_rooms()
    self.room_to_transition = nil
 end
 
-function Rooms:check_room_transition()
-   local to
-   for _, room in pairs(self.rooms) do
-      if room ~= self.room then
-         if room.rect:is_colliding_with_polygon(self.player.body) then
-            to = room
-            break
-         end
-      end
-   end
+function Rooms:check_room_transition(to)
    if to then
       self.room_to_transition = to
    end

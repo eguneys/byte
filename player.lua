@@ -4,7 +4,7 @@ Player:implement(Physics)
 function Player:init(args)
    self:init_game_object(args)
    
-   self:set_as_rectangle(0, 0, 4, 4)
+   self:set_as_rectangle(2, 2, 3, 6)
 
    self.rooms = args.rooms
 
@@ -25,9 +25,39 @@ function Player:init(args)
 
    self.t = Trigger()
 
+   self:get_facing()
    self:get_grounded()
    self:get_camera_target()
+   self:get_jumping()
 
+   self.a_idle = anim8.newAnimation(g8(1, 1), ticks.second)
+   self.a_fall = anim8.newAnimation(g8(2, 1), ticks.second)
+   self.a_run = anim8.newAnimation(g8('7-10', 1), ticks.third/4)
+   self.a_jump = anim8.newAnimation(g8('3-6', 1), (ticks.third + ticks.lengths)/4, 'pauseAtEnd')
+
+   self.a_current = self.a_idle
+
+end
+
+function Player:get_jumping()
+   self.ing_jump_lift = fale
+   if self.jump:is_accel() then
+      self.ing_jump_lift = true
+   end
+end
+
+function Player:get_facing()
+   if self.facing == nil then
+      self.facing = 1
+   end
+   self.walking = false
+   if self.walk_left:is_pace() then
+      self.walking = true
+      self.facing = -1
+   elseif self.walk_right:is_pace() then
+      self.walking = true
+      self.facing = 1
+   end
 end
 
 function Player:get_grounded()
@@ -65,6 +95,21 @@ function Player:collide_base(body)
 
 end
 
+function Player:check_room_transition()
+   local to
+   for _, room in pairs(self.rooms.rooms) do
+      if room ~= self.rooms.room then
+         if room.rect:is_colliding_with_polygon(self.body) then
+            to = room
+            break
+         end
+      end
+   end
+   if to then
+      self.rooms:check_room_transition(to)
+   end
+end
+
 function Player:update(dt)
 
    self:update_game_object(dt)
@@ -73,11 +118,11 @@ function Player:update(dt)
    self.body.cx - self.rooms.room.rect.x2
 
    if d_left < 0 then
-      self.rooms:check_room_transition()
+      self:check_room_transition()
       self.x = self.x - d_left
    end
    if d_right > 0 then
-      self.rooms:check_room_transition()
+      self:check_room_transition()
       self.x = self.x - d_right
    end
    self:get_body()
@@ -85,6 +130,8 @@ function Player:update(dt)
 
    self:get_camera_target()
    self:get_grounded()
+   self:get_facing()
+   self:get_jumping()
 
    if self.dampen_x <= 0.51 then
       self.dampen_x = math.lerp(0.1, self.dampen_x, 0.4)
@@ -93,8 +140,6 @@ function Player:update(dt)
    elseif self.dampen_x < 1 then
       self.dampen_x = math.lerp(0.1, self.dampen_x, 0.8)
    end
-
-   print(self.dampen_x)
 
    self.grace_time_on = self.grounded
 
@@ -127,8 +172,35 @@ function Player:update(dt)
    end
 
    self.velocity:update(dt)
+
+   if self.ing_jump_lift then
+      if self.a_current ~= self.a_jump then
+         self.a_current = self.a_jump
+         self.a_current:gotoFrame(1)
+         self.a_current:resume()
+      end
+   elseif self.grounded == false then
+      if self.a_current ~= self.a_fall then
+         self.a_current = self.a_fall
+         self.a_current:gotoFrame(1)
+      end
+   elseif self.walking then
+      if self.a_current ~= self.a_run then
+         self.a_current = self.a_run
+         self.a_current:gotoFrame(1)
+      end
+   else
+      if self.a_current ~= self.a_idle then
+         self.a_current = self.a_idle
+         self.a_current:gotoFrame(1)
+      end
+   end
+
+   self.a_current:update(dt)
+   self.a_current:flipH(self.facing==-1)
 end
 
 function Player:draw()
-   self:draw_game_object({ r=1, g=1, b=0, a=1 }, 1)
+   local x, y = math.floor(self.x), math.floor(self.y)
+   self.a_current:draw(sprites, x, y)
 end

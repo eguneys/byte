@@ -45,6 +45,10 @@ function Jump:init(args)
    self.machine:set_current_key('rest')
 end
 
+function Jump:is_accel()
+   return self.machine.current_key == 'accel' or self.machine.current_key == 'hang'
+end
+
 function Jump:request()
    if self.machine.current_key == 'rest' then
       self.machine:transition('accel')
@@ -100,6 +104,10 @@ end
 
 function Walk:is_rest()
    return self.machine.current_key == 'rest'
+end
+
+function Walk:is_pace()
+   return self.machine.current_key == 'pace'
 end
 
 function Walk:request()

@@ -13,7 +13,7 @@ end
 
 function XInput:press(key)
    if (not self._btn[key] or self._btn[key] <= 0) then
-      self._btn[key] = 1
+      self._btn[key] = 0.5
    end
 end
 
@@ -24,7 +24,7 @@ function XInput:release(key)
 end
 
 function XInput:btn(key)
-   return self._btn[key] or 0
+   return math.floor(self._btn[key] or 0)
 end
 
 Input=XInput()

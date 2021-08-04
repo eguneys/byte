@@ -115,8 +115,8 @@ function Camera:attach(scroll_x, scroll_y)
 
    --love.graphics.translate(-self.w / 2, -self.h / 2)
 
-   love.graphics.translate(-self.x*(scroll_x or 1),
-                              -self.y*(scroll_y or scroll_x or 1))
+   love.graphics.translate(math.floor(-self.x*(scroll_x or 1)),
+                           math.floor(-self.y*(scroll_y or scroll_x or 1)))
 
 end
 
