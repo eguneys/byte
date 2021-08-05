@@ -13,7 +13,7 @@ function editor.levelParser(rooms, levelS)
             if res[c] == nil then
                res[c] = {}
             end
-            table.push(res[c], {x=i,y=j})
+            table.push(res[c], {x=i-1,y=j-1})
          end
       end
    end

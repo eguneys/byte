@@ -106,16 +106,16 @@ end
 
 function Camera:attach(scroll_x, scroll_y)
    self.bx, self.by = self.x, self.y
-   self.x = self.bx*(scroll_x or 1)
-   self.y = self.by*(scroll_y or scroll_x or 1)
+   -- self.x = self.x*(scroll_x or 1)
+   -- self.y = self.y*(scroll_y or scroll_x or 1)
    love.graphics.push()
 
    love.graphics.translate(self.w / 2, self.h / 2)
    love.graphics.scale(self.sx, self.sy)
    love.graphics.rotate(self.r)
 
-   --love.graphics.translate(-self.w / 2, -self.h / 2)
-
+   -- love.graphics.translate(-self.w / 2, -self.h / 2)
+   
    love.graphics.translate(math.floor(-self.x*(scroll_x or 1)),
                            math.floor(-self.y*(scroll_y or scroll_x or 1)))
 

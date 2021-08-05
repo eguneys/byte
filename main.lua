@@ -14,16 +14,12 @@ local main_canvas
 function love.load()
    resize(10)
 
+   shared_init()
+
    love.graphics.setDefaultFilter('nearest')
    love.graphics.setLineStyle('rough')
 
    main_canvas = love.graphics.newCanvas(gw, gh)
-
-   sprites = love.graphics.newImage('assets/sprites.png')
-   g8 = anim8.newGrid(8, 8, 128, 128)
-   
-
-   font = Font('PICO-8', 5)
 
    love.graphics.setBackgroundColor(0, 55, 55)
 

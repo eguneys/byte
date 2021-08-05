@@ -63,6 +63,8 @@ function Rooms:init()
    self:load_rooms()
    self:set_player(self.rooms[1])
 
+   self.background = background
+
    self.in_transition = 0
 
 end
@@ -133,7 +135,11 @@ end
 
 function Rooms:draw()
 
-   self.main.camera:draw()
+   self.main.camera:attach(0.25)
+   self.background:draw(-32 + 32 * 0.25, -32 + 32 * 0.25)
+   self.main.camera:detach()
+
+   --self.main.camera:draw()
    self.main:draw()
 
 end
