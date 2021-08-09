@@ -4,7 +4,7 @@ Sentient:implement(Physics)
 function Sentient:init(args)
    self:init_game_object(args)
    
-   self:set_as_rectangle(2, 2, 6, 3)
+   self:set_as_rectangle(3, 3, 10, 10)
 
    self.room = args.room
    self.rooms = self.room.rooms
@@ -12,74 +12,71 @@ function Sentient:init(args)
    self.x = self.room.rect.x + (self.x - 1) * 4 - self.shape.x - self.shape.w / 2
    self.y = self.room.rect.y + (self.y - 1) * 4 - self.shape.y - self.shape.h / 2
 
-   self.velocity = Group()
 
-   self.dampen_x = 1
+   self.a_idle = anim8.newAnimation(g16('1-3', 3), ticks.second)
+   self.a_shoot = anim8.newAnimation(g8('1-3', 4), ticks.second)
 
-   self.walk_left = self.velocity:add(
-      Walk{prop =function (v)
-              self.dx=v*-1*self.dampen_x
-   end })
-   self.walk_right = self.velocity:add(
-      Walk{prop=function(v) 
-              self.dx=v*self.dampen_x
-   end})
+   self.a_idle:flipH(self.direction.x==-1):pause()
+   self.a_shoot:flipH(self.direction.x == -1)
 
-   self.jump = self.velocity:add(Jump{prop=function(v) self.dy = v end})
+   self.a_current = self.a_idle
 
-   self.t = Trigger()
+   self._spring = { x = Spring(1),
+                    y = Spring(1) }
 
-   self:get_facing()
-   self:get_grounded()
+   self._t = 0
 
+   self.damage_direction = Vector(0, 0)
+   
+   self.health = 3
+
+   self.t_immune = 0
 end
 
-function Sentient:get_facing()
-   if self.facing == nil then
-      self.facing = 1
-   end
-   self.walking = false
-   if self.walk_left:is_pace() then
-      self.walking = true
-      self.facing = -1
-   elseif self.walk_right:is_pace() then
-      self.walking = true
-      self.facing = 1
-   end
-end
+function Sentient:damage(direction)
+   if self.t_immune > 0 then return end
 
-function Sentient:get_grounded()
+   self.health = self.health - 1
+   self._spring.x:pull(direction.x*8, 100, 2)
+   self._spring.y:pull(direction.y*8, 100, 2)
 
-   self.was_grounded = self.grounded or false
+   self.t_immune = ticks.second
 
-   self.grounded = self.room:collide_solid(self.body.x,
-                                           self.body.y+1,
-                                           self.body.w,
-                                           self.body.h)
-end
-
-function Sentient:collide_base(body)
-   return self.room:collide_solid(
-      body.x,
-      body.y,
-      body.w,
-      body.h)
-
+   SmokeGroup {
+      group=self.rooms.main,
+      x=self.x,
+      y=self.y
+   }
 end
 
 function Sentient:update(dt)
    self:update_game_object(dt)
 
-   self:get_grounded()
-   self:get_facing()
+   if self.t_immune > 0 then
+      self.t_immune = self.t_immune - dt
+   end
 
-   self.t:update(dt)
+   self._spring.x:update(dt)
+   self._spring.y:update(dt)
+   self._t = self._t + dt
 
-   self.velocity:update(dt)
+   if self.health < 1 then
+      self.dead = true
+   else
+      self.a_idle:gotoFrame(4 - self.health)
+   end
 
-   
+   if self.spring.x == 1 then
+      self.x = math.lerp(0.2, self.x, self.x + (0.2 + self.direction.y) * math.sin(self._t * 2 * math.pi * 2))
+      self.y = math.lerp(0.2, self.y, self.y + (0.1 + self.direction.x) * math.sin(self._t * 2 * math.pi * 4))
+   end
+
+   self.a_current:update(dt)
 end
 
 function Sentient:draw()
-   self:draw_game_object()
+   local x, y = math.floor(self.x + self._spring.x.x),
+   math.floor(self.y + self._spring.y.x)
+
+   self.a_current:draw(sprites, x, y)
 end

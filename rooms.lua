@@ -17,13 +17,14 @@ function Room:init(rooms, rect, def, name)
    self.grid = Grid(4, 4, 80, 80)
 
    self.ch(function (x, y, c)
-         if c == 'V' then
-            -- Sentient{
-            --    room=self,
-            --    group=self.main,
-            --    x = x,
-            --    y = y
-            -- }
+         if c == 'L' then
+            Sentient{
+               room=self,
+               group=self.main,
+               x = x,
+               y = y,
+               direction={x=-1, y=0}
+            }
          end
          if c == 'S' then
             self.grid:get(x,
@@ -33,6 +34,17 @@ function Room:init(rooms, rect, def, name)
             self.grid:get(x, y, 'R')
          end
    end)
+end
+
+function Room:collide_objects(body)
+   for _, object in ipairs(self.main.objects) do
+      if object.body then
+         if object.body:is_colliding_with_polygon(body) then
+            return object
+         end
+      end
+   end
+   return nil
 end
 
 function Room:update(dt)

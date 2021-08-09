@@ -210,6 +210,14 @@ function Player:update(dt)
          self.rooms.main.camera:shake(8, ticks.sixth, 16)
       end
 
+      local enemy = self.room:collide_objects(self.body)
+
+      if enemy ~= nil then
+         enemy:damage(Vector(self.dash.direction.x,
+                             self.dash.direction.y))
+      end
+
+
       for i=1,2 do
          if random:sign() == 1 then
             DashTrail{

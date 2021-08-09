@@ -1,3 +1,96 @@
+SmokeGroup = Object:extend()
+SmokeGroup:implement(GameObject)
+function SmokeGroup:init(args)
+   self:init_game_object(args)
+
+   self.main = Group()
+
+   for i=1,(args.n or 5) do
+      local delay = random:float(ticks.third, ticks.one)
+      trigger:after(delay, function()
+                       Smoke {
+                          group=self.main,
+                          x=self.x + random:float(-4, 4),
+                          y=self.y+ random:float(-4, 4),
+                          r=((ticks.third-delay)/ticks.third) * 8 + random:float(-4, 4)
+                       }
+      end)
+   end
+
+   trigger:after(ticks.second*3, function()
+                    self.dead = true
+   end)
+end
+
+function SmokeGroup:update(dt)
+   self:update_game_object(dt)
+
+   self.main:update(dt)
+end
+
+function SmokeGroup:draw()
+   self.main:draw()
+end
+
+
+Smoke = Object:extend()
+Smoke:implement(GameObject)
+function Smoke:init(args)
+   self:init_game_object(args)
+
+   self.color = colors.black
+
+   self._t = random:float(ticks.second * 2, ticks.lengths)
+
+   self.angle = math.pi * random:float(0, 2)
+   self.line = Vector(0, 0)
+
+   self.line2 = Vector(0, 0)
+
+end
+
+function Smoke:update(dt)
+   self:update_game_object(dt)
+
+   self._t = self._t - dt
+
+   self.r = math.lerp(random:float(0.1, 0.2), self.r, 0)
+
+   self.x = math.lerp(random:float(0.1, 0.3), self.x, self.x+self.r*2*random:sign())
+   self.y = math.lerp(random:float(0.1, 0.3), self.y, self.y-self.r)
+
+   self.line.x = math.cos(self.angle) * self.r
+   self.line.y = math.sin(self.angle) * self.r
+
+   self.line2.x = math.lerp(0.5, self.line2.x, self.line2.x + math.cos(self.angle) * self.r)
+   self.line2.y = math.lerp(0.5, self.line2.y, self.line2.y + math.sin(self.angle) * self.r)
+
+   if self._t < 0 then
+      self.dead = true
+   elseif self._t < ticks.lengths then
+   elseif self._t < (ticks.second * 2 - ticks.half) then
+      self.color = colors.gray
+   elseif self._t < (ticks.second * 2 - ticks.third) then
+      self.color = colors.gray
+   elseif self._t < (ticks.second * 2 - ticks.sixth) then
+      self.color = colors.light
+   end
+
+end
+
+function Smoke:draw()
+   graphics.circle(self.x, self.y,
+                   self.r,
+                   self.color)
+
+   graphics.line(self.line2.x + self.x - self.line.x,
+                 self.line2.y + self.y - self.line.x,
+                 self.line2.x + self.x + self.line.x,
+                 self.line2.y + self.y + self.line.y,
+                 colors.black, 1)
+end
+
+
 Slash = Object:extend()
 Slash:implement(GameObject)
 function Slash:init(args)
