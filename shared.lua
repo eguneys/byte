@@ -1,12 +1,15 @@
 function shared_init()
 
    colors = {
+      white=Color('#ffffff'),
       black=Color('#000000'),
       dark = Color('#1d2b53'),
       gray=Color('#5f574f'),
       light = Color('#fff1e8'),
       red = Color('#ff004d'),
-      dark_red = Color('#7e2553')
+      dark_red = Color('#7e2553'),
+      violet=Color('#83769c'),
+      blue=Color('#29adff')
    }
 
 

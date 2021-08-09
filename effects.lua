@@ -5,8 +5,8 @@ function SmokeGroup:init(args)
 
    self.main = Group()
 
-   for i=1,(args.n or 5) do
-      local delay = random:float(ticks.third, ticks.one)
+   for i=1,self.n do
+      local delay = random:float(ticks.third * self.n/5, ticks.one)
       trigger:after(delay, function()
                        Smoke {
                           group=self.main,
@@ -38,7 +38,7 @@ Smoke:implement(GameObject)
 function Smoke:init(args)
    self:init_game_object(args)
 
-   self.color = colors.black
+   self.color = colors.light
 
    self._t = random:float(ticks.second * 2, ticks.lengths)
 
@@ -69,11 +69,11 @@ function Smoke:update(dt)
       self.dead = true
    elseif self._t < ticks.lengths then
    elseif self._t < (ticks.second * 2 - ticks.half) then
-      self.color = colors.gray
+      self.color = colors.red
    elseif self._t < (ticks.second * 2 - ticks.third) then
-      self.color = colors.gray
+      self.color = colors.red
    elseif self._t < (ticks.second * 2 - ticks.sixth) then
-      self.color = colors.light
+      self.color = colors.dark_red
    end
 
 end
@@ -87,7 +87,7 @@ function Smoke:draw()
                  self.line2.y + self.y - self.line.x,
                  self.line2.x + self.x + self.line.x,
                  self.line2.y + self.y + self.line.y,
-                 colors.black, 1)
+                 colors.violet, random:int(1, 8))
 end
 
 

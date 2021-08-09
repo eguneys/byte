@@ -21,6 +21,7 @@ function Player:init(args)
    self.velocity = Group()
 
    self.dampen_x = 1
+   self.dash_dampen_x = 1
 
    self.walk_left = self.velocity:add(
       Walk{prop =function (v)
@@ -34,16 +35,11 @@ function Player:init(args)
    self.jump = self.velocity:add(Jump{prop=function(v) self.dy = v end})
 
    self.dash = self.velocity:add(Dash{prop=function(vx, vy)
-                                         self.dx = vx
-                                         self.dy = vy
+                                         self.dx = vx * self.dash_dampen_x
+                                         self.dy = vy * self.dash_dampen_x
                                 end,
                                       begin_hook = function(direction)
-                                         Slash {
-                                            group = self.rooms.main,
-                                            x = self.body.cx,
-                                            y = self.body.cy,
-                                            direction=direction
-                                         }
+
                                 end})
 
    self.t = Trigger()
@@ -103,6 +99,7 @@ function Player:get_grounded()
 
    if self.grounded then
       self.dampen_x = 1
+      self.dash_dampen_x = 1
    else
       self.dampen_x = math.lerp(0.01, self.dampen_x, 0.3)
    end
@@ -213,9 +210,21 @@ function Player:update(dt)
       local enemy = self.room:collide_objects(self.body)
 
       if enemy ~= nil then
-         enemy:damage(Vector(self.dash.direction.x,
-                             self.dash.direction.y))
+         local hit = enemy:damage(Vector(self.dash.direction.x,
+                                         self.dash.direction.y))
+
+         if hit then
+            Slash {
+               group = self.rooms.main,
+               x = self.body.cx,
+               y = self.body.cy,
+               direction=self.dash.direction
+            }
+            self.dash_dampen_x = 0.1
+         end
       end
+
+      self.dash_dampen_x = math.lerp(0.3, self.dash_dampen_x, 1)
 
 
       for i=1,2 do

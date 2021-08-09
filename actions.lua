@@ -178,7 +178,7 @@ function Jump:init(args)
    local MaxJumpHeight = 4 * 5 + 2 * 5
    local JumpV = MaxJumpHeight / JumpDuration
 
-   local FallV = MaxJumpHeight / ticks.second
+   local FallV = MaxJumpHeight / (ticks.third * 2)
 
    self.machine = Machine{
       accel=MachineState{
@@ -205,12 +205,17 @@ function Jump:init(args)
          next_key='rest'
       },
       rest=MachineState{
-         delay=0,
+         delay=ticks.second * 2,
          hooks= {
             update=function(i)
-               self.prop(FallV)
+               if i < 0.3 then
+                  self.prop(FallV * (1-i))
+               else
+                  self.prop(FallV * (2-i) * (2-i) * 0.5)
+               end
             end            
-         }
+         },
+         next_key = 'rest'
       }
    }
    self.machine:set_current_key('rest')

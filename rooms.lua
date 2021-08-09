@@ -22,8 +22,7 @@ function Room:init(rooms, rect, def, name)
                room=self,
                group=self.main,
                x = x,
-               y = y,
-               direction={x=-1, y=0}
+               y = y
             }
          end
          if c == 'S' then
