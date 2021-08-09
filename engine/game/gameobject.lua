@@ -6,16 +6,18 @@ function GameObject:init_game_object(args)
 
    self.x, self.y = self.x or 0, self.y or 0
    self.spring = Spring(1)
+   self.t = Trigger()
 
    return self
 end
 
 function GameObject:remove_game_object()
-   if self.group then self.group:remove(self) end
+   self.dead = true
 end
 
 function GameObject:update_game_object(dt)
    self.spring:update(dt)
+   self.t:update(dt)
    if self.body then self:update_physics(dt) end
 end
 

@@ -1,3 +1,109 @@
+Dash = Object:extend()
+function Dash:init(args)
+   self.begin_hook = args.begin_hook
+   self.prop = args.prop
+
+   self.direction = Vector(1, 0)
+
+   self.d_dash = 1
+
+   local DashDuration = ticks.sixth
+   local DashHeight = 4 * 5 + 8 * 5
+   local DashV = DashHeight / DashDuration
+
+   self.machine = Machine{
+      input=MachineState{
+         delay=ticks.sixth,
+         hooks={
+            update=function()
+               if Input:btn('up') > 0 then
+                  self.direction.y = -1
+               elseif Input:btn('down') > 0 then
+                  self.direction.y = 1
+               else
+                  self.direction.y = 0
+               end
+
+               if Input:btn('left') > 0 then
+                  self.direction.x = -1
+               elseif Input:btn('right') > 0 then
+                  self.direction.x = 1
+               else
+                  if self.direction.y ~= 0 then
+                     self.direction.x = 0
+                  end
+               end
+               self.prop(0, 0)
+            end
+         },
+         next_key='accel'
+      },
+      accel=MachineState{
+         delay=ticks.sixth,
+         hooks={
+            begin = function()
+               self.d_dash = self.d_dash - 1
+               if self.direction.x ~= 0 and self.direction.y ~= 0 then
+                  self.damping = 0.75
+               else
+                  self.damping = 1
+               end
+               if self.direction.x == 0 and self.direction.y == 0 then
+                  self.direction.x = 1
+               end
+
+               self.begin_hook(self.direction)
+            end,
+            update= function(i)
+               if i < 0.5 then
+                  self.prop(self.damping * self.direction.x * DashV * i * 2,
+                               self.damping * self.direction.y * DashV *i*2)
+               else
+                  self.prop(self.damping * self.direction.x * DashV * (1-i) * 2,
+                            self.damping * self.direction.y * DashV *(1-i)*2)
+               end
+            end,
+            exit= function()
+               self.prop(0, 0)
+               self.direction.x = 0
+            end
+         },
+         next_key='rest'
+      },
+      rest=MachineState{
+         delay=0,
+         hooks={
+         }
+      }
+   }
+
+   self.machine:set_current_key('rest')
+end
+
+function Dash:is_rest()
+   return self.machine.current_key == 'rest'
+end
+
+function Dash:replenish()
+   self.d_dash = 1
+end
+
+function Dash:request(facing)
+   if self.d_dash < 1 then
+      return
+   end
+   if self.machine.current_key == 'rest' then
+      if facing ~= nil then
+         self.direction.x = facing
+      end
+      self.machine:transition('input')
+   end
+end
+
+function Dash:update(dt)
+   self.machine:update(dt)
+end
+
 Throw = Object:extend()
 function Throw:init(args)
    self.prop = args.prop

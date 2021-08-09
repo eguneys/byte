@@ -33,6 +33,19 @@ function Player:init(args)
 
    self.jump = self.velocity:add(Jump{prop=function(v) self.dy = v end})
 
+   self.dash = self.velocity:add(Dash{prop=function(vx, vy)
+                                         self.dx = vx
+                                         self.dy = vy
+                                end,
+                                      begin_hook = function(direction)
+                                         Slash {
+                                            group = self.rooms.main,
+                                            x = self.body.cx,
+                                            y = self.body.cy,
+                                            direction=direction
+                                         }
+                                end})
+
    self.t = Trigger()
 
    self:get_facing()
@@ -46,15 +59,23 @@ function Player:init(args)
    self.a_run = anim8.newAnimation(g8('7-10', 1), ticks.third/4)
    self.a_jump = anim8.newAnimation(g8('3-6', 1), (ticks.third + ticks.lengths)/4, 'pauseAtEnd')
 
+   self.a_dash = anim8.newAnimation(g8('11-13', 1), ticks.sixth/3)
+
    self.a_current = self.a_idle
 
 end
 
 function Player:get_jumping()
-   self.ing_jump_lift = fale
+   self.ing_jump_lift = false
    if self.jump:is_accel() then
       self.ing_jump_lift = true
    end
+
+   self.was_dash = self.ing_dash or false
+   self.ing_dash = true
+   if self.dash:is_rest() then
+      self.ing_dash = false
+   end   
 end
 
 function Player:get_facing()
@@ -179,6 +200,10 @@ function Player:update(dt)
       end, nil, 'grace')
    end
 
+   if self.grounded and not self.ing_dash then
+      self.dash:replenish()
+   end
+
    self.t:update(dt)
    
    if Input:btn('left') > 0 then
@@ -200,18 +225,18 @@ function Player:update(dt)
       self.jump:cut()
    end
 
-   if Input:btn('c') == 2 then
-      if self.o_pickup then
-         self.o_pickup:request_throw()
-         self.o_pickup = nil
-      else
-         self.o_pickup = self.rooms:pickup()
-      end
+   if Input:btn('c') ~= 0 then
+      self.dash:request(self.facing)
    end
 
    self.velocity:update(dt)
 
-   if self.ing_jump_lift then
+   if self.ing_dash then
+      if self.a_current ~= self.a_dash then
+         self.a_current = self.a_dash
+         self.a_current:gotoFrame(1)
+      end
+   elseif self.ing_jump_lift then
       if self.a_current ~= self.a_jump then
          self.a_current = self.a_jump
          self.a_current:gotoFrame(1)
