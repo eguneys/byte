@@ -13,6 +13,16 @@ function Camera:init(x, y, w, h)
 
    self:set_deadzone()
    self:set_bounds(0, 0, 0, 0)
+
+
+   self.shake_amount = Vector(0, 0)
+   self.last_shake_amount = Vector(0, 0)
+   self.shakes = { x = {}, y = {} }
+end
+
+function Camera:shake(intensity, duration, frequency)
+   table.insert(self.shakes.x, Shake(intensity, duration or 0, frequency or 60))
+   table.insert(self.shakes.y, Shake(intensity, duration or 0, frequency or 60))
 end
 
 function Camera:follow(target)
@@ -37,6 +47,18 @@ function Camera:set_bounds(x, y, w, h)
 end
 
 function Camera:update(dt)
+
+
+   self.shake_amount:set(0, 0)
+   for _, z in ipairs({"x", "y"}) do
+      for i = #self.shakes[z], 1, -1 do
+         self.shakes[z][i]:update(dt)
+         self.shake_amount[z] = self.shake_amount[z] + self.shakes[z][i]:get_amplitude()
+         if not self.shakes[z][i].shaking then
+            table.remove(self.shakes[z], i)
+         end
+      end
+   end
 
    self.bounds:reshape(math.lerp(self.lerp.x, self.bounds.x, self.target_bounds.x),
                        math.lerp(self.lerp.y, self.bounds.y, self.target_bounds.y),
@@ -92,8 +114,9 @@ function Camera:update(dt)
       self.y = math.min(math.max(self.y, self.bounds.y + self.h/2), self.bounds.y2 - self.h/2)
    end
 
-
-
+   self.x, self.y = self.x - self.last_shake_amount.x, self.y - self.last_shake_amount.y
+   self.x, self.y = self.x + self.shake_amount.x, self.y + self.shake_amount.y
+   self.last_shake_amount:set(self.shake_amount)
 end
 
 function Camera:get_local_coords(x, y)
@@ -134,4 +157,46 @@ function Camera:draw()
                          self.deadzone.w,
                          self.deadzone.h, 0, 0, nil, 1)
    end
+end
+
+
+Shake = Object:extend()
+function Shake:init(amplitude, duration, frequency)
+   self.amplitude = amplitude or 0
+   self.duration = duration or 0
+   self.frequency = frequency or 60
+
+   self.samples = {}
+   for i = 1, duration * frequency do self.samples[i] = 2 * love.math.random()-1 end
+   self.ti = love.timer.getTime()
+   self.t = 0
+   self.shaking = true
+end
+
+function Shake:update(dt)
+   self.t = love.timer.getTime() - self.ti
+   if self.t > self.duration then
+      self.shaking = false
+   end
+end
+
+function Shake:get_noise(s)
+   return self.samples[s] or 0
+end
+
+function Shake:get_decay(t)
+   if t > self.duration then return end
+   return (self.duration - t) / self.duration
+end
+
+function Shake:get_amplitude(t)
+   if not t then
+      if not self.shaking then return 0 end
+      t = self.t
+   end
+   local s = t * self.frequency
+   local s0 = math.floor(s)
+   local s1 = s0 + 1
+   local k = self:get_decay(t)
+   return self.amplitude*(self:get_noise(s0) + (s-s0)*(self:get_noise(s1)-self:get_noise(s0)))*k
 end

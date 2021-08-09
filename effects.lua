@@ -62,3 +62,40 @@ function Slash:draw()
    local x, y = math.floor(self.x), math.floor(self.y)
    self.a_current:draw(sprites, x, y, self.angle, 1, 1, self.ox, self.oy)
 end
+
+
+DashTrail = Object:extend()
+DashTrail:implement(GameObject)
+function DashTrail:init(args)
+   self:init_game_object(args)
+
+   self.lx = 0 --self.direction.x * 8
+   self.ly = 0 --self.direction.y * 8
+   self.die_thres = random:float(0, ticks.sixth * 2)
+   -- self.x = self.x - self.lx
+   -- self.y = self.y - self.ly
+
+   self.color = colors.red
+end
+
+function DashTrail:update(dt)
+
+   self.die_thres = self.die_thres - dt
+
+   if self.die_thres > ticks.sixth then
+      self.lx = math.lerp(0.4, self.lx, self.direction.x * 8)
+      self.ly = math.lerp(0.4, self.ly, self.direction.y * 8)
+   elseif self.die_thres < ticks.sixth then
+      self.lx = math.lerp(0.3, self.lx, 0.1)
+      self.ly = math.lerp(0.3, self.ly, 0.1)
+      self.color = colors.dark_red
+   end
+
+   if self.die_thres < 0 then
+      self:remove_game_object()
+   end
+end
+
+function DashTrail:draw()
+   graphics.line(self.x, self.y, self.x - self.lx, self.y - self.ly, self.color, 1)
+end

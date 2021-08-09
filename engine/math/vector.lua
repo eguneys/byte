@@ -6,6 +6,18 @@ function Vector:init(x, y)
    self.y = y or x or 0
 end
 
+function Vector:set(x, y)
+   if not y then
+      self.x = x.x
+      self.y = x.y
+   else
+      self.x = x
+      self.y = y
+   end
+   return self
+end
+
+
 function Vector:add(x, y)
    if not y then
       self.x = self.x + x.x

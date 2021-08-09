@@ -204,6 +204,24 @@ function Player:update(dt)
       self.dash:replenish()
    end
 
+   if self.ing_dash then
+
+      if not self.was_dash then
+         self.rooms.main.camera:shake(8, ticks.sixth, 16)
+      end
+
+      for i=1,2 do
+         if random:sign() == 1 then
+            DashTrail{
+               group=self.rooms.main,
+               x=self.body.cx + random:int(-4,4),
+               y=self.body.cy + random:int(-4,4),
+               direction=self.dash.direction
+            }
+         end
+      end
+   end
+
    self.t:update(dt)
    
    if Input:btn('left') > 0 then

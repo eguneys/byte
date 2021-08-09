@@ -3,7 +3,8 @@ function shared_init()
    colors = {
       dark = Color('#1d2b53'),
       light = Color('#fff1e8'),
-      red = Color('#ff004d')
+      red = Color('#ff004d'),
+      dark_red = Color('#7e2553')
    }
 
 
