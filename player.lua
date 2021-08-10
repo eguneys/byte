@@ -3,11 +3,7 @@ Player:implement(GameObject)
 Player:implement(Physics)
 function Player:init(args)
    self:init_game_object(args)
-   
-   self:set_as_rectangle(2, 2, 3, 6)
 
-   self.rooms = args.rooms
-   self.room = args.room
 
    local x, y
 
@@ -17,6 +13,11 @@ function Player:init(args)
             self.y = self.room.rect.y + (y - 1) * 4 - 5
          end
    end)
+   
+   self:set_as_rectangle(2, 2, 3, 6)
+
+   self.rooms = args.rooms
+   self.room = args.room
 
    self.velocity = Group()
 
@@ -162,6 +163,7 @@ function Player:update(dt)
          self.x = self.x + d_left - 4
       else
          self.x = self.x - d_left
+         self.rooms:player_die()
       end
    end
    if d_right >= 0 then
@@ -169,8 +171,31 @@ function Player:update(dt)
          self.x = self.x + d_right + 4
       else
          self.x = self.x - d_right - 1
+         self.rooms:player_die()
       end
    end
+
+
+   local d_up, d_down = self.body.y - self.room.rect.y,
+   self.body.y2 - self.room.rect.y2
+   if d_up <= 0 then
+      if self:check_room_transition() then
+         self.y = self.y + d_up - 4
+      else
+         self.y = self.y - d_up
+         self.rooms:player_die()
+      end
+   end
+   if d_down >= 0 then
+      if self:check_room_transition() then
+         self.y = self.y + d_down + 4
+      else
+         self.y = self.y - d_down
+         self.rooms:player_die()
+      end
+   end
+
+
    self:get_body()
 
 
@@ -301,106 +326,108 @@ end
 function Player:draw()
    local x, y = math.floor(self.x), math.floor(self.y)
    self.a_current:draw(sprites, x, y)
+
+   self:draw_game_object()
 end
 
-Rock = Object:extend()
-Rock:implement(GameObject)
-Rock:implement(Physics)
-function Rock:init(args)
-   self:init_game_object(args)
-   self:set_as_rectangle(2, 2, 4, 4)
+-- Rock = Object:extend()
+-- Rock:implement(GameObject)
+-- Rock:implement(Physics)
+-- function Rock:init(args)
+--    self:init_game_object(args)
+--    self:set_as_rectangle(2, 2, 4, 4)
 
 
-   self.rooms = args.rooms
-   self.player = args.player
-   self.i_t = 0
+--    self.rooms = args.rooms
+--    self.player = args.player
+--    self.i_t = 0
 
-   self.throw = Throw{prop= function(vx, vy)
-                         self.dx=vx*self.throw_dir
-                         self.dy=vy
-                     end}
+--    self.throw = Throw{prop= function(vx, vy)
+--                          self.dx=vx*self.throw_dir
+--                          self.dy=vy
+--                      end}
 
-   self.a_idle = anim8.newAnimation(g8(1, 2), ticks.second)
-   self.a_throw = anim8.newAnimation(g8('2-4', 2), ticks.lengths/3)
-   self.a_crush = anim8.newAnimation(g8('5-7', 2), ticks.sixth/3, 'pauseAtEnd')
+--    self.a_idle = anim8.newAnimation(g8(1, 2), ticks.second)
+--    self.a_throw = anim8.newAnimation(g8('2-4', 2), ticks.lengths/3)
+--    self.a_crush = anim8.newAnimation(g8('5-7', 2), ticks.sixth/3, 'pauseAtEnd')
 
-   self.a_current = self.a_idle
+--    self.a_current = self.a_idle
 
-   self.ing_throw = false
+--    self.ing_throw = false
 
-   self._t = Trigger()
-end
+--    self._t = Trigger()
+-- end
 
-function Rock:collide_base(body)
-   return self.room:collide_solid(
-      body.x,
-      body.y,
-      body.w,
-      body.h) or
-      self.room:collide_bounds(body.x, body.y)
-end
+-- function Rock:collide_base(body)
+--    return self.room:collide_solid(
+--       body.x,
+--       body.y,
+--       body.w,
+--       body.h) or
+--       self.room:collide_bounds(body.x, body.y)
+-- end
 
-function Rock:just_collided()
-   self.ing_crash = self.ing_throw
-   self.ing_throw = false
-   self._t:after(ticks.sixth, function()
-                    self.dead = true
-   end)
-end
+-- function Rock:just_collided()
+--    self.ing_crash = self.ing_throw
+--    self.ing_throw = false
+--    self._t:after(ticks.sixth, function()
+--                     self.dead = true
+--    end)
+-- end
 
-function Rock:request_throw()
-   self.throw_dir = self.player.facing + math.sign(self.player.dx) * 0.5
-   self.ing_throw = true
-   self.room = self.player.room
-   self.throw:request()
-   self.player = nil
-end
+-- function Rock:request_throw()
+--    self.throw_dir = self.player.facing + math.sign(self.player.dx) * 0.5
+--    self.ing_throw = true
+--    self.room = self.player.room
+--    self.throw:request()
+--    self.player = nil
+-- end
 
-function Rock:update(dt)
+-- function Rock:update(dt)
 
-   self._t:update(dt)
-   self.i_t = self.i_t + dt
+--    self._t:update(dt)
+--    self.i_t = self.i_t + dt
 
-   if self.player then
-      local px, py = 
-         self.player.pickup_target.x + (self.player.facing == -1 and -self.player.body.w or 1),
-      self.player.pickup_target.y - self.body.h / 2
+--    if self.player then
+--       local px, py = 
+--          self.player.pickup_target.x + (self.player.facing == -1 and -self.player.body.w or 1),
+--       self.player.pickup_target.y - self.body.h / 2
 
-      px = px - self.shape.x
-      py = py - self.shape.y
+--       px = px - self.shape.x
+--       py = py - self.shape.y
 
-      self.x = math.lerp(1, self.x, px)
-      self.y = math.lerp(1, self.y, py + 
-                            (0.5 + 0.4 * math.sign(self.player.dy * -1)) * 
-                            math.sin(self.i_t * 2*math.pi/
-                                        (ticks.second + 
-                                            ticks.half * math.sign(self.player.dy))))
-   end
+--       self.x = math.lerp(1, self.x, px)
+--       self.y = math.lerp(1, self.y, py + 
+--                             (0.5 + 0.4 * math.sign(self.player.dy * -1)) * 
+--                             math.sin(self.i_t * 2*math.pi/
+--                                         (ticks.second + 
+--                                             ticks.half * math.sign(self.player.dy))))
+--    end
 
-   self:update_game_object(dt)
+--    self:update_game_object(dt)
 
-   if self.ing_throw then
-      self.throw:update(dt)
-   elseif self.ing_crash then
-      self.dx = 0
-      self.dy = 0
-   end
+--    if self.ing_throw then
+--       self.throw:update(dt)
+--    elseif self.ing_crash then
+--       self.dx = 0
+--       self.dy = 0
+--    end
 
-   if self.ing_crash then
-      if self.a_current ~= self.a_crush then
-         self.a_current = self.a_crush
-      end
-   elseif self.ing_throw then
-      if self.a_current ~= self.a_throw then
-         self.a_current = self.a_throw
-         self.a_current:gotoFrame(1)
-      end
-   end
+--    if self.ing_crash then
+--       if self.a_current ~= self.a_crush then
+--          self.a_current = self.a_crush
+--       end
+--    elseif self.ing_throw then
+--       if self.a_current ~= self.a_throw then
+--          self.a_current = self.a_throw
+--          self.a_current:gotoFrame(1)
+--       end
+--    end
 
-   self.a_current:update(dt)
-end
+--    self.a_current:update(dt)
+-- end
 
-function Rock:draw()
-   local x, y = math.floor(self.x), math.floor(self.y)
-   self.a_current:draw(sprites, x, y)
-end
+-- function Rock:draw()
+--    local x, y = math.floor(self.x), math.floor(self.y)
+--    self.a_current:draw(sprites, x, y)
+-- end

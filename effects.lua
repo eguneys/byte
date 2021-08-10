@@ -6,13 +6,15 @@ function SmokeGroup:init(args)
    self.main = Group()
 
    for i=1,self.n do
-      local delay = random:float(ticks.third * self.n/5, ticks.one)
+      local delay = random:float(ticks.third * self.n/5, ticks.one + 
+                                    self.n/20 * ticks.lengths)
       trigger:after(delay, function()
                        Smoke {
                           group=self.main,
                           x=self.x + random:float(-4, 4),
                           y=self.y+ random:float(-4, 4),
-                          r=((ticks.third-delay)/ticks.third) * 8 + random:float(-4, 4)
+                          r=((ticks.third*2-delay)/ticks.third) * 4 + random:float(-4, 4),
+                          direction=self.direction
                        }
       end)
    end
@@ -58,6 +60,9 @@ function Smoke:update(dt)
 
    self.x = math.lerp(random:float(0.1, 0.3), self.x, self.x+self.r*2*random:sign())
    self.y = math.lerp(random:float(0.1, 0.3), self.y, self.y-self.r)
+
+   self.x = math.lerp(0.5, self.x, self.x + self.direction.x)
+   self.y = math.lerp(0.5, self.y, self.y + self.direction.y)
 
    self.line.x = math.cos(self.angle) * self.r
    self.line.y = math.sin(self.angle) * self.r

@@ -67,21 +67,41 @@ function Room:draw()
 end
 
 Rooms = Object:extend()
-function Rooms:init()
+Rooms:implement(GameObject)
+function Rooms:init(args)
+
+   self:init_game_object(args)
 
    self.main = Group(Camera(0, 0, 64, 64))
 
    self:load_rooms()
-   self:set_player(self.rooms[1])
-
    self.background = background
 
-   self.in_transition = 0
+   self:reset()
+end
 
+function Rooms:reset()
+   self.in_transition = 0
+   self._t = 0
+   self.warm_up_called = false
+   self:set_player(self.rooms[1])
+end
+
+function Rooms:load_last_checkpoint()
+   self:reset()
+end
+
+function Rooms:player_die()
+   self.player:remove_game_object()
+
+   if self.after_die then
+      self.after_die(
+         Vector(self.main.camera:get_local_coords(self.player.body.cx, self.player.body.cy))
+      )
+   end
 end
 
 function Rooms:set_player(room)
-
    self.player = Player{group = self.main,
                         rooms = self,
                         room = room}
@@ -94,15 +114,6 @@ function Rooms:set_player(room)
                                self.player.room.rect.y,
                                self.player.room.rect.w,
                                self.player.room.rect.h)
-end
-
-function Rooms:pickup()
-   if self.player.grounded then
-      return Rock{group=self.main,
-                  rooms=self,
-                  player=self.player}
-   end
-return nil
 end
 
 function Rooms:load_rooms()
@@ -126,6 +137,17 @@ function Rooms:check_room_transition(to)
 end
 
 function Rooms:update(dt)
+
+   self._t = self._t + dt
+
+   if self._t > ticks.second then
+      if not self.warm_up_called and self.after_warmup then
+         self.after_warmup(
+            Vector(self.main.camera:get_local_coords(self.player.body.cx, self.player.body.cy))
+         )
+         self.warm_up_called = true
+      end
+   end
 
    if self.room_to_transition then
       self.main.camera:set_bounds(self.room_to_transition.rect.x,

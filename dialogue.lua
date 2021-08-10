@@ -15,6 +15,8 @@ function Dialogue:init()
    self.i_cutscene = 0
 
    self.b_off = false
+
+   self.spawn_pos = Vector(32, 32)
 end
 
 function Dialogue:off()
@@ -30,6 +32,47 @@ function Dialogue:cutscene(delay, after)
    self._t:after(delay, function()
                     self._t:tween(ticks.half,
                                   self, { i_cutscene = 0 }, math.quart_in_out)
+   end)
+end
+
+function Dialogue:player_die(die_pos, delay, after)
+   local f_open = function()
+      self._t:tween(ticks.third,
+                    self, { i_cutscene = 1 }, math.quart_in, after)
+   end
+
+   local f_close = function()
+      self._t:after(delay, function()
+                       self._t:tween(ticks.half,
+                                     self, 
+                                     { i_cutscene = 1-(6/64) },
+                                     math.quart_out, function()
+                                        self._t:after(ticks.third*2, f_open)
+                       end)
+      end)
+   end
+
+   self.spawn_pos = die_pos
+   f_close()
+
+end
+
+function Dialogue:spawn(spawn_pos, delay, after)
+   self.spawn_pos = spawn_pos
+   self._t:tween(ticks.third * 3, self, { i_cutscene = 1 }, math.quart_in_out, after)
+
+   local f_open = function()
+      self._t:tween(ticks.third,
+                    self, { i_cutscene = 0 }, math.quart_out)
+   end
+
+   self._t:after(ticks.third * 3 + delay, function()
+                    self._t:tween(ticks.half,
+                                  self, 
+                                  { i_cutscene = 1-6/64 },
+                                  math.quart_in, function()
+                                     self._t:after(ticks.third*3, f_open)
+                    end)
    end)
 end
 
@@ -51,8 +94,16 @@ end
 
 function Dialogue:draw()
 
-   graphics.rectangle(0, 0, 64, self.i_cutscene * 32, 0, 0, colors.dark)
-   graphics.rectangle(0, 32+(1-self.i_cutscene)*32, 64, 32, 0, 0, colors.dark)
+   if self.i_cutscene > 0.0001 then
+      local sx, sy = self.spawn_pos.x, self.spawn_pos.y
+      local sx2, sy2 = sx + 12, sy + 12
+
+      graphics.rectangle(0, 0, sx - (1-self.i_cutscene) * 64, 64, 0, 0, colors.dark)
+      graphics.rectangle(sx + (1-self.i_cutscene)*64, 0, 64, 64, 0, 0, colors.dark)
+
+      graphics.rectangle(0, 0, 64, sy - (1-self.i_cutscene) * 64, 0, 0, colors.dark)
+      graphics.rectangle(0, sy + (1-self.i_cutscene)*64, 64, 64, 0, 0, colors.dark)
+   end
 
    graphics.rectangle(self.i_bg_x * 64, 5, self.i_bg*64, 5, 0, 0, colors.light)
    if self.text ~= nil then

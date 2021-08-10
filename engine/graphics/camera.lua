@@ -47,8 +47,6 @@ function Camera:set_bounds(x, y, w, h)
 end
 
 function Camera:update(dt)
-
-
    self.shake_amount:set(0, 0)
    for _, z in ipairs({"x", "y"}) do
       for i = #self.shakes[z], 1, -1 do

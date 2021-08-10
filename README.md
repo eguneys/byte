@@ -1,41 +1,40 @@
+# Day 5
+- [ ] Sound, music Intro Title Menu Artwork
 
-~~ ## Story ~~
+# Day 4
 
-~~ Aliens has been conducting experiments on different life forms, by manipulating their memory, and leaving them on a planet for observation. ~~
+- [ ] Score, HUD Gameplay, levels, content
+- [ ] Decoration Obstacles Rare items
+- [ ] Checkpoint
+- [ ] Viewport optimization, sleep wakeup cycles on enter [enemy ai]
 
-~~ Gogo wakes up after a long sleep with no memory. ~~
+# Day 3
 
-~~ - i am hungry. ~~
-~~ - arrows ~~
-~~ - X ~~
+- [ ] Story Dialog, tile artwork
+- [ ] Special mechanic
+- [ ] NPC artwork
+- [ ] Dialog triggers
 
-~~ Gogo looks around in hunger, to see vegetation, rocks and little sentients. ~~
-~~ Sentients move around eating vegetation. ~~
+# Day 2
 
-~~ Stops near a rock ~~
+- [ ] More platforming
+- [ ] Spikes
+- [ ] Moving, vanishing, one way, platforms
 
-~~ - c and c ~~
+# Day 1
 
-~~ Gogo picks up a rock and sentient avoids Gogo, which quickly throws to a sentient to kill it, it drops food and splashes some liquid. ~~
-
-~~ - ugh.. ~~
-
-~~ Gogo eats the food, the liquid sticks to his body and makes a trail. ~~
-
-~~ - so sticky. ~~
-
-~~ Gogo explores more to find a river, river washes up the liquid, and no more trail. ~~
-
+- [ ] Restart Spawn Die ~
+- [ ] Collectible Key Door
+- [ ] Rooms, backtracking mechanic
+- [ ] Overall game logic
 
 ## Current
 
-- [x] screen transition
-- [x] dialogue text
-- [ ] some rooms
-
-- [ ] sleep, wake up animation
-
-- [ ] play scheduler 
+- [ ] Why dash into enemies
+- [ ] Why explore rooms
+- [ ] Why backtrack [enemy ai]
+- [ ] What is the challenge [puzzle, combat, enemy ai]
+- [ ] What is the chance [chance]
 
 ## LIST
 
@@ -54,12 +53,12 @@
 - [+] Room Transition
 - [ ] ~Wall Cling~
 - [ ] ~Fall Damage~
-- [ ] Attack, Slash,
+- [+] Attack, Slash,
 - [ ] Story - Dialog
 - [ ] Level 1
-- [ ] Animations
-- [ ] Background Foreground Parallax
-- [ ] Trail, Particles, Screen Shake
+- [+] Animations
+- [+] Background Foreground Parallax
+- [+] Trail, Particles, Screen Shake
 - [ ] Spikes, place seldom
 - [ ] Restart - Spawn - Die
 - [ ] Checkpoints

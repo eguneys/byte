@@ -5,19 +5,29 @@ dbg = ''
 function Play:init()
 
    self.dialogue = Dialogue()
-   self.rooms = Rooms()
+   self.rooms = Rooms{
+      after_warmup =function(player_pos)
+         -- self.dialogue:print('[black]I am [red]hungry')
+         self.dialogue:spawn(
+            player_pos,
+            ticks.sixth, function()
+               self.dialogue:on()
+               self.show_rooms = true
+         end)
+      end,
+      after_die= function(player_pos)
+         self.dialogue:player_die(
+            player_pos,
+            ticks.sixth, function()
+               self.rooms:load_last_checkpoint()
+               
+         end)
+   end}
+
 
    self.show_rooms = false
+   self.dialogue:off()
 
-
-   self.show_rooms = true
-   -- self.dialogue:off()
-   -- self.dialogue:cutscene(ticks.second*3, function()
-   --                           self.dialogue:on()
-   --                           self.show_rooms = true
-   -- end)
-   -- self.dialogue:print('[black]I am [red]hungry')
-   
 end
 
 function Play:update(dt)

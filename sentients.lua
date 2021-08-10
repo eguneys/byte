@@ -44,7 +44,8 @@ function Sentient:damage(direction)
       group=self.rooms.main,
       x=self.x,
       y=self.y,
-      n=5
+      n=5,
+      direction=direction
    }
 
    return true
@@ -87,7 +88,8 @@ function Sentient:update(dt)
          group=self.rooms.main,
          x=self.x,
          y=self.y,
-         n=11
+         n=11,
+         direction=Vector(0, 0)
       }
       self.t_sleep = ticks.second * 10
       self.a_current = self.a_sleep
