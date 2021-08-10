@@ -23,12 +23,24 @@
 
 # Day 1
 
-- [ ] Restart Spawn Die ~
-- [ ] Collectible Key Door
+- [ ] Restart Spawn Die ~~
+- [ ] Collectible Key Door ~
 - [ ] Rooms, backtracking mechanic
 - [ ] Overall game logic
 
 ## Current
+
+### ~ Restart Spawn Die
+- [ ] Notice death
+- [ ] Notice room edges that kill
+- [ ] Summary of run
+- [ ] Wait indicator
+- [ ] Input block
+- [ ] Recycle rooms
+- [ ] Decide checkpoint spawn location
+
+
+### ~~
 
 - [ ] Why dash into enemies
 - [ ] Why explore rooms

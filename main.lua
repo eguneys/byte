@@ -9,6 +9,7 @@ require 'dialogue'
 require 'sentients'
 require 'effects'
 require 'decoration'
+require 'doors'
 
 local play
 local main_canvas

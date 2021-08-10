@@ -14,6 +14,7 @@ function shared_init()
 
 
    sprites = love.graphics.newImage('assets/sprites.png')
+   g82 = anim8.newGrid(8,16,512, 512)
    g8 = anim8.newGrid(8, 8, 512, 512)
    g16 = anim8.newGrid(16, 16, 512, 512)
    g32 = anim8.newGrid(32, 32, 512, 512)

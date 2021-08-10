@@ -37,7 +37,7 @@ function Grid:draw_solid(x, y)
                                   g=0,
                                   b=0,
                                   a=1
-                                                                                             }, 1)
+                                                }, 1)
          end
       end
    end
@@ -46,9 +46,10 @@ end
 function Grid:collide_solid(x, y, w, h)
    for i=x,x+w do
       for j=y,y+h do
-         if self:get(math.floor(i/self.celw) + 1,
-                     math.floor(j/self.celh) + 1) then
-            return true
+         local res = self:get(math.floor(i/self.celw) + 1,
+                              math.floor(j/self.celh) + 1)
+         if res then
+            return res
          end            
       end
    end

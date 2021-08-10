@@ -4,8 +4,10 @@ function Dialogue:init()
    self.text = nil
 
    self.text_tags = {
+      black = TextTag{draw = function(c, i, text) graphics.set_color(colors.dark) end},
       dark = TextTag{draw = function(c, i, text) graphics.set_color(colors.dark) end},
-      red = TextTag{draw = function(c, i, text) graphics.set_color(colors.red) end}
+      red = TextTag{draw = function(c, i, text) graphics.set_color(colors.red) end},
+      blue = TextTag{draw = function(c, i, text) graphics.set_color(colors.blue) end}
    }
 
    self._t = Trigger()

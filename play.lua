@@ -4,19 +4,19 @@ dbg = ''
 
 function Play:init()
 
-   self.dialogue = Dialogue()
+   dialogue = Dialogue()
    self.rooms = Rooms{
       after_warmup =function(player_pos)
          -- self.dialogue:print('[black]I am [red]hungry')
-         self.dialogue:spawn(
+         dialogue:spawn(
             player_pos,
             ticks.sixth, function()
-               self.dialogue:on()
+               dialogue:on()
                self.show_rooms = true
          end)
       end,
       after_die= function(player_pos)
-         self.dialogue:player_die(
+         dialogue:player_die(
             player_pos,
             ticks.sixth, function()
                self.rooms:load_last_checkpoint()
@@ -26,12 +26,12 @@ function Play:init()
 
 
    self.show_rooms = false
-   self.dialogue:off()
+   dialogue:off()
 
 end
 
 function Play:update(dt)
-   self.dialogue:update(dt)
+   dialogue:update(dt)
    self.rooms:update(dt)
 end
 
@@ -40,7 +40,7 @@ function Play:draw()
    if self.show_rooms then
       self.rooms:draw()
    end
-   self.dialogue:draw()
+   dialogue:draw()
 
    if dbg then
       love.graphics.setColor(1,0,0,1)

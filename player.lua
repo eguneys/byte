@@ -24,6 +24,8 @@ function Player:init(args)
    self.dampen_x = 1
    self.dash_dampen_x = 1
 
+   self.t_talk_cool = true
+
    self.walk_left = self.velocity:add(
       Walk{prop =function (v)
               self.dx=v*-1*self.dampen_x
@@ -107,6 +109,27 @@ function Player:get_grounded()
 
 end
 
+function Player:get_collisions()
+   self.collide_enemy = nil
+   self.collide_door = nil
+
+   local obj = self.room:collide_objects(self.body)
+   if (obj ~= nil) then
+      if (obj:is(Sentient)) then
+         self.collide_enemy = obj
+      end
+   end
+
+   local on_door = self.room:collide_solid(self.body.x,
+                                        self.body.y, 
+                                        self.body.w + 4,
+                                        self.body.h, self.facing * 4)
+
+   if on_door and on_door ~= true and on_door:is(Door) then
+      self.collide_door = on_door
+   end
+end
+
 function Player:get_pickup_target()
    if not self.pickup_target then
       self.pickup_target = Vector(0, 0)
@@ -152,8 +175,17 @@ function Player:check_room_transition()
    return false
 end
 
-function Player:update(dt)
+function Player:safe_talk(text)
+   if not self.t_talk_cool then return end
+   self.t_talk_cool = false
+   dialogue:print(text)
+   self.t:after(ticks.second*6, function()
+                   self.t_talk_cool = true
+   end)
+   
+end
 
+function Player:update(dt)
    self:update_game_object(dt)
 
    local d_left, d_right = self.body.x - self.room.rect.x,
@@ -183,16 +215,20 @@ function Player:update(dt)
          self.y = self.y + d_up - 4
       else
          self.y = self.y - d_up
-         self.rooms:player_die()
+         --self.rooms:player_die()
       end
    end
    if d_down >= 0 then
       if self:check_room_transition() then
-         self.y = self.y + d_down + 4
+         self.y = self.y + d_down + 10
       else
-         self.y = self.y - d_down
+         self.y = self.y - d_down - 1
          self.rooms:player_die()
       end
+   end
+
+   if self.collide_door ~= nil then
+      self:safe_talk('[black]I need [blue]key')
    end
 
 
@@ -204,6 +240,8 @@ function Player:update(dt)
    self:get_grounded()
    self:get_facing()
    self:get_jumping()
+
+   self:get_collisions()
 
    if self.dampen_x <= 0.51 then
       self.dampen_x = math.lerp(0.1, self.dampen_x, 0.4)
@@ -232,11 +270,11 @@ function Player:update(dt)
          self.rooms.main.camera:shake(8, ticks.sixth, 16)
       end
 
-      local enemy = self.room:collide_objects(self.body)
 
-      if enemy ~= nil then
-         local hit = enemy:damage(Vector(self.dash.direction.x,
-                                         self.dash.direction.y))
+
+      if self.collide_enemy ~= nil then
+         local hit = self.collide_enemy:damage(Vector(self.dash.direction.x,
+                                                      self.dash.direction.y))
 
          if hit then
             Slash {
@@ -263,8 +301,6 @@ function Player:update(dt)
          end
       end
    end
-
-   self.t:update(dt)
    
    if Input:btn('left') > 0 then
       self.walk_left:request()
