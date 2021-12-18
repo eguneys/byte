@@ -1,21 +1,13 @@
 require 'engine'
 require 'shared'
-require 'levels'
-require 'rooms'
+require 'tiles'
 require 'play'
-require 'actions'
-require 'player'
-require 'dialogue'
-require 'sentients'
-require 'effects'
-require 'decoration'
-require 'doors'
 
 local play
 local main_canvas
 
 function love.load()
-   resize(10)
+   resize(3)
 
    shared_init()
 
