@@ -20,24 +20,35 @@ function HasCardWithPos:init_card_pos(card, pos)
   self:init_pos(pos)
 end
 
-function HasCardWithPos:draw()
+function HasCardWithPos:draw_card_pos()
   self.card:draw(self.pos.x, self.pos.y)
 end
 
+
 CardStack = Object:extend()
 CardStack:implement(HasPos)
-function CardStack:init(x, y)
+function CardStack:init(x, y, margin)
 
   self:init_pos(Vector(x, y))
 
+  self.margin = margin or 8
   self.targets = {}
   self.bases = {}
   self.cards = { }
 
-  self.margin = 8 
-
   self.it = 1
   self.t = Trigger()
+
+
+  self.to_adds = {}
+end
+
+function CardStack:is_idle()
+  return self.it == 1
+end
+
+function CardStack:remove()
+  return table.remove(self.cards)
 end
 
 function CardStack:is_idle()
@@ -49,15 +60,18 @@ function CardStack:remove()
 end
 
 function CardStack:add(cardpos)
-  table.insert(self.cards, StillCard(cardpos.card, cardpos.pos))
+  table.insert(self.to_adds, cardpos)
+end
 
+function CardStack:_do_add(cardpos)
+  table.insert(self.cards, StillCard(cardpos.card, cardpos.pos))
 
   self.it = 0
   self.bases = {}
   self.targets = {}
   for i, card in ipairs(self.cards) do
     table.insert(self.bases, Vector(card.pos.x, card.pos.y))
-    table.insert(self.targets, Vector(self.pos.x, self.pos.y + i * self.margin))
+    table.insert(self.targets, Vector(self.pos.x, self.pos.y + (i - 1) * self.margin))
   end
   
   self.t:tween(0.3, self, { it = 1 }, math.sin_in_out, function()
@@ -69,8 +83,22 @@ end
 function CardStack:update(dt)
 
   self.t:update(dt)
+
+  for i = #self.to_adds, 1, -1 do
+    local cardpos = self.to_adds[i]
+    if cardpos:is_idle() then
+      self:_do_add(cardpos)
+      table.remove(self.to_adds, i)
+    end
+  end
+
+
   for i, card in ipairs(self.cards) do
     card.pos = vlerp(self.it, self.bases[i], self.targets[i])
+  end
+
+  for i, to_add in ipairs(self.to_adds) do
+    to_add:update(dt)
   end
 end
 
@@ -78,6 +106,10 @@ end
 function CardStack:draw()
   for i, card in ipairs(self.cards) do
     card:draw()
+  end
+
+  for i, to_add in ipairs(self.to_adds) do
+    to_add:draw()
   end
 end
 
@@ -100,21 +132,30 @@ end
 function Foundation:update(dt)
   self.downturned:update(dt)
 
-  if self.to_reveal ~= nil and self.downturned:is_idle() then
+  if self.to_reveal ~= nil and #self.downturned.cards > 0 and self.downturned:is_idle() then
     if self.upturned == nil then
-      local reveal_at_pos = self.downturned:remove().pos
+     local reveal_at_pos = self.downturned:remove().pos
 
-      self.upturned = CardStack(reveal_at_pos.x, reveal_at_pos.y)
+     self.upturned = CardStack(reveal_at_pos.x, reveal_at_pos.y)
 
-      self.upturned:add(self.to_reveal)
-      self.to_reveal = nil
+     self.upturned:add(RevealCard(self.to_reveal, reveal_at_pos))
+     self.to_reveal = nil
     end
   end
+
+  self.downturned:update(dt)
+  if self.upturned then
+    self.upturned:update(dt)
+  end
+  
 end
 
 
 function Foundation:draw()
   self.downturned:draw()
+  if self.upturned then
+    self.upturned:draw()
+  end
 end
 
 StillCard = Object:extend()
@@ -122,6 +163,41 @@ StillCard:implement(HasCardWithPos)
 function StillCard:init(card, pos)
   self:init_card_pos(card, pos)
 end
+
+function StillCard:is_idle()
+  return true
+end
+
+function StillCard:draw()
+  self:draw_card_pos()
+end
+
+
+RevealCard = Object:extend()
+RevealCard:implement(HasCardWithPos)
+function RevealCard:init(card, pos)
+  self:init_card_pos(card, pos)
+  self.idle = false
+
+  self.anim = anim8.newAnimation(g34('3-7', 1), 0.4/5, function()
+    self.idle = true
+    self.anim:pauseAtEnd()
+  end)
+end
+
+function RevealCard:is_idle()
+  return self.idle
+end
+
+function RevealCard:update(dt)
+  self.anim:update(dt)
+end
+
+function RevealCard:draw()
+  self.anim:draw(sprites, math.round(self.pos.x), math.round(self.pos.y))
+end
+
+
 
 ShuffleCard = Object:extend()
 ShuffleCard:implement(HasCardWithPos)
@@ -132,6 +208,11 @@ function ShuffleCard:init(card)
   self.it = 0
   self.delay = 0.1
 end
+
+function ShuffleCard:is_idle()
+  return true
+end
+
 
 function ShuffleCard:update(dt)
 
@@ -150,6 +231,12 @@ function ShuffleCard:update(dt)
   end
 end
 
+function ShuffleCard:draw()
+  self:draw_card_pos()
+end
+
+
+
 function vlerp(f, vsrc, vdst)
   return Vector(
   math.lerp(f, vsrc.x, vdst.x),
@@ -157,9 +244,6 @@ function vlerp(f, vsrc, vdst)
 end
 
 
-function ShuffleCard:draw()
-  self.card:draw(self.pos.x, self.pos.y)
-end
 
 ShuffleUpAndSolitaire = Object:extend()
 function ShuffleUpAndSolitaire:init()
@@ -170,16 +254,45 @@ function ShuffleUpAndSolitaire:init()
   self.t = Trigger()
 
   for i = 1,7 do
+    local max_delay = 0
+
     for j = 1, i do
+      local delay = random:float(0.4, 0.6 + (1-i/7) * 0.4)
+      if delay > max_delay then
+        max_delay = delay
+      end
       table.insert(self.sc, ShuffleCard(BackCard()))
 
-      self.t:after(random:float(0.4, 0.6 + (1-i/7) * 0.4), function ()
+      self.t:after(delay, function ()
         local cardpos = table.remove(self.sc)
         self.solitaire.foundations[i]:add_hidden(cardpos)
       end)
     end 
-    self.solitaire.foundations[i]:reveal_soon(UpCard())
+    self.t:after(max_delay + 0.2, function ()
+      self.solitaire.foundations[i]:reveal_soon(UpCard(4, 12))
+    end)
   end
+
+  -- 28 24
+  for i = 1, 24 do
+
+    table.insert(self.sc, ShuffleCard(BackCard()))
+
+    self.t:after(random:float(0.4, 0.6 + (1-i/24)*0.5), function()
+      local cardpos = table.remove(self.sc)
+
+      self.solitaire.stock:add(cardpos)
+    end)
+  end
+
+  self.t:after(2, function()
+    self.solitaire:deal_stock3 {
+      UpCard(1, 1),
+      UpCard(2, 2),
+      UpCard(3, 3)
+    } 
+  end)
+
 end
 
 
@@ -208,14 +321,30 @@ end
 Solitaire = Object:extend()
 function Solitaire:init()
   self.foundations = {
-    Foundation(32 * 0 + 42, 0, 0),
-    Foundation(32 * 1 + 42, 0, 1),
-    Foundation(32 * 2 + 42, 0, 2),
-    Foundation(32 * 3 + 42, 0, 3),
-    Foundation(32 * 4 + 42, 0, 4),
-    Foundation(32 * 5 + 42, 0, 5),
-    Foundation(32 * 6 + 42, 0, 6),
+    Foundation(32 * 0 + 42, 8, 0),
+    Foundation(32 * 1 + 42, 8, 1),
+    Foundation(32 * 2 + 42, 8, 2),
+    Foundation(32 * 3 + 42, 8, 3),
+    Foundation(32 * 4 + 42, 8, 4),
+    Foundation(32 * 5 + 42, 8, 5),
+    Foundation(32 * 6 + 42, 8, 6),
   }
+
+  self.stock = CardStack(8, 8, 0.1)
+  self.waste = CardStack(8, 40 + 8 + 8)
+
+end
+
+function Solitaire:deal_stock3(cards)
+
+
+  for i=1,3 do
+    local cardpos = self.stock:remove()
+
+
+    self.waste:add(RevealCard(cards[i], cardpos.pos))
+
+  end
 
 end
 
@@ -224,6 +353,9 @@ function Solitaire:update(dt)
   for i, f in ipairs(self.foundations) do
     f:update(dt)
   end
+
+  self.stock:update(dt)
+  self.waste:update(dt)
 end
 
 function Solitaire:draw()
@@ -232,26 +364,54 @@ function Solitaire:draw()
     f:draw()
   end
 
+  self.stock:draw()
+  self.waste:draw()
+
 end
 
 UpCard = Object:extend()
 UpCard:implement(Card)
-function UpCard:init()
+function UpCard:init(suit, rank)
+  self.anim = anim8.newAnimation(g34(1, 1), 1)
+
+  self.a_suit = anim8.newAnimation(g66('1-4', 1), 1)
+  self.a_rank = anim8.newAnimation(g86('1-13', 1), 1)
+  self.a_suit:gotoFrame(suit)
+  self.a_rank:gotoFrame(rank)
 end
 
 function UpCard:draw(x, y)
+  x = math.round(x)
+  y = math.round(y)
+
+  self.anim:draw(sprites, x, y)
+  self.a_suit:draw(sprites, x+22, y+2)
+  self.a_rank:draw(sprites, x+2, y+2)
 end
 
 
 BackCard = Object:extend()
 BackCard:implement(Card)
 function BackCard:init()
-  
   self.anim = anim8.newAnimation(g34(2, 1), 1)
 end
 
 function BackCard:draw(x, y)
   self.anim:draw(sprites, math.round(x), math.round(y))
+end
+
+
+Showcase = Object:extend()
+function Showcase:init()
+  self.r = RevealCard(UpCard(1, 1), Vector(50, 50))
+end
+
+function Showcase:update(dt)
+  self.r:update(dt)
+end
+
+function Showcase:draw()
+  self.r:draw()
 end
 
 
@@ -261,7 +421,11 @@ dbg = ''
 
 function Play:init()
 
+  print('[Init] Play')
   self.solitaire = ShuffleUpAndSolitaire()
+
+
+  --self.sc = Showcase()
 end
 
 function Play:update(dt)
@@ -280,9 +444,8 @@ function Play:draw()
 
   self.solitaire:draw()
 
-
-   if dbg then
-      love.graphics.setColor(1,0,0,1)
-      love.graphics.print(dbg, 0, 0)
-   end
+  if dbg then
+    love.graphics.setColor(1,0,0,1)
+    love.graphics.print(dbg, 0, 0)
+  end
 end

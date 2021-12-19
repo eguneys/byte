@@ -6,6 +6,10 @@ local play
 local main_canvas
 
 function love.load()
+
+  io.stdout:setvbuf('no')
+
+
    resize(3)
 
    shared_init()
