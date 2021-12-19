@@ -361,7 +361,7 @@ function LoadSolitaire:init()
     { 0, 1, 4 },
     { 2, 2, 1, 3, 4 },
     { 2, 3, 2, 4, 4 },
-    { , 3, 2, 4, 4, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3 },
+    { 2, 3, 2, 4, 4, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3 },
     { 5, 3, 2  }
   }
 
@@ -457,8 +457,13 @@ function UpCard:init(suit, rank)
   self.anim = anim8.newAnimation(g34(1, 1), 1)
   self.a_shadow = anim8.newAnimation(g34(3, 1), 1)
 
-  self.a_suit = anim8.newAnimation(g66('1-4', 1), 1)
-  self.a_rank = anim8.newAnimation(g86('1-13', 1), 1)
+  self.a_suit1 = anim8.newAnimation(g66('1-4', 1), 1)
+  self.a_rank1 = anim8.newAnimation(g86('1-13', 1), 1)
+  self.a_suit2 = anim8.newAnimation(g66('1-4', 2), 1)
+  self.a_rank2 = anim8.newAnimation(g86('1-13', 2), 1)
+
+  self.a_suit = suit%2==1 and self.a_suit2 or self.a_suit1
+  self.a_rank = suit%2==1 and self.a_rank2 or self.a_rank1
   self.a_suit:gotoFrame(suit)
   self.a_rank:gotoFrame(rank)
 end
