@@ -421,6 +421,31 @@ function Showcase:draw()
   self.r:draw()
 end
 
+MouseDraw = Object:extend()
+MouseDraw:implement(HasPos)
+function MouseDraw:init()
+  local x, y = Mouse.x, Mouse.y
+  self:init_pos(Vector(x, y))
+  self.anim = anim8.newAnimation(g12('1-2', 1), 1)
+  self.anim:gotoFrame(2)
+
+end
+
+
+function MouseDraw:update(dt)
+  self.pos:set(Mouse.x, Mouse.y)
+  if Mouse.cur ~= nil then
+    self.anim:gotoFrame(1)
+  else
+    self.anim:gotoFrame(2)
+  end
+end
+
+function MouseDraw:draw()
+
+  local x, y = math.round(self.pos.x), math.round(self.pos.y)
+  self.anim:draw(sprites, x, y)
+end
 
 Play = Object:extend()
 
@@ -429,10 +454,11 @@ dbg = ''
 function Play:init()
 
   print('[Init] Play')
+
+
+
+  self.md = MouseDraw()
   self.solitaire = ShuffleUpAndSolitaire()
-
-
-  --self.sc = Showcase()
 end
 
 function Play:update(dt)
@@ -443,6 +469,7 @@ function Play:update(dt)
   end
 
 
+  self.md:update(dt)
   self.solitaire:update(dt)
 end
 
@@ -450,6 +477,8 @@ function Play:draw()
 
 
   self.solitaire:draw()
+  self.md:draw()
+
 
   if dbg then
     love.graphics.setColor(1,0,0,1)

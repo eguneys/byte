@@ -9,6 +9,8 @@ function love.load()
 
   io.stdout:setvbuf('no')
 
+  love.mouse.setVisible(false)
+
 
    resize(3)
 
