@@ -402,14 +402,18 @@ end
 
 Solitaire = Object:extend()
 function Solitaire:init()
+
+  self.bg = anim8.newAnimation(gbg(1, 1), 1)
+
+
   self.foundations = {
-    Foundation(32 * 0 + 42, 8, 0),
-    Foundation(32 * 1 + 42, 8, 1),
-    Foundation(32 * 2 + 42, 8, 2),
-    Foundation(32 * 3 + 42, 8, 3),
-    Foundation(32 * 4 + 42, 8, 4),
-    Foundation(32 * 5 + 42, 8, 5),
-    Foundation(32 * 6 + 42, 8, 6),
+    Foundation(33 * 0 + 50, 11, 0),
+    Foundation(33 * 1 + 50, 11, 1),
+    Foundation(33 * 2 + 50, 11, 2),
+    Foundation(33 * 3 + 50, 11, 3),
+    Foundation(33 * 4 + 50, 11, 4),
+    Foundation(33 * 5 + 50, 11, 5),
+    Foundation(33 * 6 + 50, 11, 6),
   }
 
   self.stock = CardStack(8, 8, 0.1)
@@ -442,6 +446,7 @@ end
 
 function Solitaire:draw()
 
+  self.bg:draw(sprites2, 0, 0)
   for i, f in ipairs(self.foundations) do
     f:draw()
   end
@@ -472,7 +477,7 @@ function UpCard:draw(x, y)
   x = math.round(x)
   y = math.round(y)
 
-  self.a_shadow:draw(sprites, x + 2, y + 2)
+  self.a_shadow:draw(sprites, x + 1, y + 1)
   self.anim:draw(sprites, x, y)
   self.a_suit:draw(sprites, x+22, y+2)
   self.a_rank:draw(sprites, x+2, y+2)
@@ -490,7 +495,7 @@ end
 function BackCard:draw(x, y)
   x = math.round(x)
   y = math.round(y)
-  self.a_shadow:draw(sprites, x + 2, y + 2)
+  self.a_shadow:draw(sprites, x + 1, y + 1)
   self.anim:draw(sprites, x, y)
 end
 
