@@ -14,13 +14,9 @@ function shared_init()
 
 
    sprites = love.graphics.newImage('assets/sprites.png')
-   g82 = anim8.newGrid(8,16,512, 512)
-   g8 = anim8.newGrid(8, 8, 512, 512)
-   g16 = anim8.newGrid(16, 16, 512, 512)
-   g32 = anim8.newGrid(32, 32, 512, 512)
-
-   background = Image('background')
-
+   g86 = anim8.newGrid(8, 6, 512, 512, 0, 16)
+   g66 = anim8.newGrid(6, 6, 512, 512, 0, 32)
+   g34 = anim8.newGrid(30, 40, 512, 512, 0, 48)
    font = Font('PICO-8', 5)
 
 end

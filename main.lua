@@ -1,6 +1,5 @@
 require 'engine'
 require 'shared'
-require 'tiles'
 require 'play'
 
 local play
