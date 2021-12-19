@@ -74,7 +74,7 @@ function CardStack:_do_add(cardpos)
     table.insert(self.targets, Vector(self.pos.x, self.pos.y + (i - 1) * self.margin))
   end
   
-  self.t:tween(0.3, self, { it = 1 }, math.sin_in_out, function()
+  self.t:tween(0.3, self, { it = 1 }, math.sine_in_out, function()
     self.it = 1
   end, 'settle')
 
@@ -179,7 +179,7 @@ function RevealCard:init(card, pos)
   self:init_card_pos(card, pos)
   self.idle = false
 
-  self.anim = anim8.newAnimation(g34('3-7', 1), 0.4/5, function()
+  self.anim = anim8.newAnimation(g34('4-8', 1), 0.4/5, function()
     self.idle = true
     self.anim:pauseAtEnd()
   end)
@@ -373,6 +373,7 @@ UpCard = Object:extend()
 UpCard:implement(Card)
 function UpCard:init(suit, rank)
   self.anim = anim8.newAnimation(g34(1, 1), 1)
+  self.a_shadow = anim8.newAnimation(g34(3, 1), 1)
 
   self.a_suit = anim8.newAnimation(g66('1-4', 1), 1)
   self.a_rank = anim8.newAnimation(g86('1-13', 1), 1)
@@ -384,9 +385,11 @@ function UpCard:draw(x, y)
   x = math.round(x)
   y = math.round(y)
 
+  self.a_shadow:draw(sprites, x + 2, y + 2)
   self.anim:draw(sprites, x, y)
   self.a_suit:draw(sprites, x+22, y+2)
   self.a_rank:draw(sprites, x+2, y+2)
+
 end
 
 
@@ -394,10 +397,14 @@ BackCard = Object:extend()
 BackCard:implement(Card)
 function BackCard:init()
   self.anim = anim8.newAnimation(g34(2, 1), 1)
+  self.a_shadow = anim8.newAnimation(g34(3, 1), 1)
 end
 
 function BackCard:draw(x, y)
-  self.anim:draw(sprites, math.round(x), math.round(y))
+  x = math.round(x)
+  y = math.round(y)
+  self.a_shadow:draw(sprites, x + 2, y + 2)
+  self.anim:draw(sprites, x, y)
 end
 
 
