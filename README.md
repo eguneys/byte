@@ -1,1 +1,1 @@
-- [ ] Mouse Cursor look like when, clicked on empty, hover/click on action, drag card
+- [ ] Mouse Cursor look like when, idle, clicked on empty, hover/click on action, drag card

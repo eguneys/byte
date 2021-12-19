@@ -518,8 +518,8 @@ MouseDraw:implement(HasPos)
 function MouseDraw:init()
   local x, y = Mouse.x, Mouse.y
   self:init_pos(Vector(x, y))
-  self.anim = anim8.newAnimation(g12('1-2', 1), 1)
-  self.anim:gotoFrame(2)
+  self.anim = anim8.newAnimation(g128('1-2', 1), 1)
+  self.anim:gotoFrame(1)
 
 end
 
@@ -527,9 +527,9 @@ end
 function MouseDraw:update(dt)
   self.pos:set(Mouse.x, Mouse.y)
   if Mouse.cur ~= nil then
-    self.anim:gotoFrame(1)
-  else
     self.anim:gotoFrame(2)
+  else
+    self.anim:gotoFrame(1)
   end
 end
 

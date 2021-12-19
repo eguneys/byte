@@ -19,7 +19,7 @@ function shared_init()
    g66 = anim8.newGrid(6, 6, 512, 512, 0, 32)
    g34 = anim8.newGrid(30, 40, 512, 512, 0, 48)
 
-   g12 = anim8.newGrid(12, 12, 512, 512, 112, 0)
+   g128 = anim8.newGrid(12, 8, 512, 512, 144, 0)
 
    gbg = anim8.newGrid(320, 180, 1024, 1024)
    font = Font('PICO-8', 5)
