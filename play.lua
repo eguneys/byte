@@ -52,7 +52,7 @@ function CardStack:remove()
 end
 
 function CardStack:is_idle()
-  return self.it == 1
+  return #self.to_adds == 0 and self.it == 1
 end
 
 function CardStack:remove()
@@ -61,6 +61,10 @@ end
 
 function CardStack:add(cardpos)
   table.insert(self.to_adds, cardpos)
+end
+
+function CardStack:top_target_pos()
+  return self.targets[#self.targets]
 end
 
 function CardStack:_do_add(cardpos)
@@ -73,6 +77,8 @@ function CardStack:_do_add(cardpos)
     table.insert(self.bases, Vector(card.pos.x, card.pos.y))
     table.insert(self.targets, Vector(self.pos.x, self.pos.y + (i - 1) * self.margin))
   end
+
+  table.insert(self.targets, Vector(self.pos.x, self.pos.y + #self.cards * self.margin))
   
   self.t:tween(0.3, self, { it = 1 }, math.sine_in_out, function()
     self.it = 1
@@ -115,7 +121,9 @@ end
 
 
 Foundation = Object:extend()
+Foundation:implement(HasPos)
 function Foundation:init(x, y)
+  self:init_pos(Vector(x, y))
   self.downturned = CardStack(x, y)
   self.upturned = nil
 end
@@ -124,6 +132,9 @@ function Foundation:add_hidden(cardpos)
   self.downturned:add(cardpos)
 end
 
+function Foundation:add_upturned(ss_cardpos)
+  self.to_upturned = ss_cardpos
+end
 
 function Foundation:reveal_soon(card)
   self.to_reveal = card
@@ -131,6 +142,7 @@ end
 
 function Foundation:update(dt)
   self.downturned:update(dt)
+
 
   if self.to_reveal ~= nil and #self.downturned.cards > 0 and self.downturned:is_idle() then
     if self.upturned == nil then
@@ -142,6 +154,26 @@ function Foundation:update(dt)
      self.to_reveal = nil
     end
   end
+
+
+  if self.to_upturned ~= nil and self.downturned:is_idle() then
+    if self.upturned == nil then
+      local target_pos = self.downturned:top_target_pos()
+      if target_pos == nil then
+        target_pos = self.pos
+      end
+      self.upturned = CardStack(target_pos.x, target_pos.y)
+    end
+    for _, cardpos in ipairs(self.to_upturned) do
+      self.upturned:add(cardpos)
+    end
+    self.to_upturned = nil
+  end
+
+
+
+
+
 
   self.downturned:update(dt)
   if self.upturned then
@@ -318,6 +350,56 @@ function ShuffleUpAndSolitaire:draw()
 
 end
 
+
+LoadSolitaire = Object:extend()
+function LoadSolitaire:init()
+
+
+  self.fs = {
+    { 0, 1, 1, 1, 2, 1, 3 },
+    { 0 },
+    { 0, 1, 4 },
+    { 2, 2, 1, 3, 4 },
+    { 2, 3, 2, 4, 4 },
+    { , 3, 2, 4, 4, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3 },
+    { 5, 3, 2  }
+  }
+
+  self.solitaire = Solitaire()
+
+  for fi, fs in ipairs(self.fs) do
+    local foun = self.solitaire.foundations[fi]
+    local hidden = fs[1]
+
+    for k=1,hidden do
+      foun:add_hidden(StillCard(BackCard(),
+      foun.downturned.pos
+      ))
+    end
+
+    local ss_upturned = {}
+    for i=2,#fs, 2 do
+      local suit, rank = fs[i], fs[i+1]
+      table.insert(ss_upturned, StillCard(UpCard(suit, rank), foun.downturned.pos))
+    end
+
+    foun:add_upturned(ss_upturned)
+  end
+
+
+end
+
+function LoadSolitaire:update(dt)
+  self.solitaire:update(dt)
+end
+
+
+function LoadSolitaire:draw()
+  self.solitaire:draw()
+end
+
+
+
 Solitaire = Object:extend()
 function Solitaire:init()
   self.foundations = {
@@ -458,14 +540,15 @@ function Play:init()
 
 
   self.md = MouseDraw()
-  self.solitaire = ShuffleUpAndSolitaire()
+  self.solitaire = LoadSolitaire()
 end
 
 function Play:update(dt)
 
 
   if Input:btn('left') > 0 then
-    self.solitaire = ShuffleUpAndSolitaire()
+    --self.solitaire = ShuffleUpAndSolitaire()
+    self.solitaire = LoadSolitaire()
   end
 
 
