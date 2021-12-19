@@ -20,9 +20,10 @@ function HasCardWithPos:init_card_pos(card, pos)
   self:init_pos(pos)
 end
 
-function HasCardWithPos:draw()
+function HasCardWithPos:draw_card_pos()
   self.card:draw(self.pos.x, self.pos.y)
 end
+
 
 CardStack = Object:extend()
 CardStack:implement(HasPos)
@@ -36,23 +37,38 @@ function CardStack:init(x, y)
 
   self.margin = 8 
 
+  self.it = 1
   self.t = Trigger()
+
+
+  self.to_adds = {}
+end
+
+function CardStack:is_idle()
+  return self.it == 1
+end
+
+function CardStack:remove()
+  return table.remove(self.cards)
 end
 
 function CardStack:add(cardpos)
-  table.insert(self.cards, StillCard(cardpos.card, cardpos.pos))
+  table.insert(self.to_adds, cardpos)
+end
 
+function CardStack:_do_add(cardpos)
+  table.insert(self.cards, StillCard(cardpos.card, cardpos.pos))
 
   self.it = 0
   self.bases = {}
   self.targets = {}
   for i, card in ipairs(self.cards) do
     table.insert(self.bases, Vector(card.pos.x, card.pos.y))
-    table.insert(self.targets, Vector(self.pos.x, self.pos.y + i * self.margin))
+    table.insert(self.targets, Vector(self.pos.x, self.pos.y + (i - 1) * self.margin))
   end
   
   self.t:tween(0.3, self, { it = 1 }, math.sin_in_out, function()
-    self.it = 1.0
+    self.it = 1
   end, 'settle')
 
 end
@@ -60,6 +76,16 @@ end
 function CardStack:update(dt)
 
   self.t:update(dt)
+
+  for i = #self.to_adds, 1, -1 do
+    local cardpos = self.to_adds[i]
+    if cardpos:is_idle() then
+      self:_do_add(cardpos)
+      table.remove(self.to_adds, i)
+    end
+  end
+
+
   for i, card in ipairs(self.cards) do
     card.pos = vlerp(self.it, self.bases[i], self.targets[i])
   end
@@ -75,20 +101,45 @@ end
 
 Foundation = Object:extend()
 function Foundation:init(x, y)
-  self.hiddens = CardStack(x, y)
+  self.downturned = CardStack(x, y)
+  self.upturned = nil
 end
 
 function Foundation:add_hidden(cardpos)
-  self.hiddens:add(cardpos)
+  self.downturned:add(cardpos)
+end
+
+
+function Foundation:reveal_soon(card)
+  self.to_reveal = card
 end
 
 function Foundation:update(dt)
-  self.hiddens:update(dt)
+
+  if self.to_reveal ~= nil and #self.downturned.cards > 0 and self.downturned:is_idle() then
+    if self.upturned == nil then
+     local reveal_at_pos = self.downturned:remove().pos
+
+     self.upturned = CardStack(reveal_at_pos.x, reveal_at_pos.y)
+
+     self.upturned:add(RevealCard(self.to_reveal, reveal_at_pos))
+     self.to_reveal = nil
+    end
+  end
+
+  self.downturned:update(dt)
+  if self.upturned then
+    self.upturned:update(dt)
+  end
+  
 end
 
 
 function Foundation:draw()
-  self.hiddens:draw()
+  self.downturned:draw()
+  if self.upturned then
+    self.upturned:draw()
+  end
 end
 
 StillCard = Object:extend()
@@ -96,6 +147,31 @@ StillCard:implement(HasCardWithPos)
 function StillCard:init(card, pos)
   self:init_card_pos(card, pos)
 end
+
+function StillCard:is_idle()
+  return true
+end
+
+function StillCard:draw()
+  self:draw_card_pos()
+end
+
+
+RevealCard = Object:extend()
+RevealCard:implement(HasCardWithPos)
+function RevealCard:init(card, pos)
+  self:init_card_pos(card, pos)
+end
+
+function RevealCard:is_idle()
+  return true
+end
+
+function RevealCard:draw()
+  self:draw_card_pos()
+end
+
+
 
 ShuffleCard = Object:extend()
 ShuffleCard:implement(HasCardWithPos)
@@ -106,6 +182,11 @@ function ShuffleCard:init(card)
   self.it = 0
   self.delay = 0.1
 end
+
+function ShuffleCard:is_idle()
+  return true
+end
+
 
 function ShuffleCard:update(dt)
 
@@ -124,6 +205,12 @@ function ShuffleCard:update(dt)
   end
 end
 
+function ShuffleCard:draw()
+  self:draw_card_pos()
+end
+
+
+
 function vlerp(f, vsrc, vdst)
   return Vector(
   math.lerp(f, vsrc.x, vdst.x),
@@ -131,9 +218,6 @@ function vlerp(f, vsrc, vdst)
 end
 
 
-function ShuffleCard:draw()
-  self.card:draw(self.pos.x, self.pos.y)
-end
 
 ShuffleUpAndSolitaire = Object:extend()
 function ShuffleUpAndSolitaire:init()
@@ -151,8 +235,8 @@ function ShuffleUpAndSolitaire:init()
         local cardpos = table.remove(self.sc)
         self.solitaire.foundations[i]:add_hidden(cardpos)
       end)
-
     end 
+    self.solitaire.foundations[i]:reveal_soon(UpCard())
   end
 end
 
@@ -208,6 +292,18 @@ function Solitaire:draw()
 
 end
 
+UpCard = Object:extend()
+UpCard:implement(Card)
+function UpCard:init()
+
+  self.anim = anim8.newAnimation(g34(1, 1), 1)
+end
+
+function UpCard:draw(x, y)
+  self.anim:draw(sprites, math.round(x), math.round(y))
+end
+
+
 BackCard = Object:extend()
 BackCard:implement(Card)
 function BackCard:init()
@@ -226,6 +322,7 @@ dbg = ''
 
 function Play:init()
 
+  print('[Init] Play')
   self.solitaire = ShuffleUpAndSolitaire()
 end
 
