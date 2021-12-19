@@ -36,7 +36,16 @@ function CardStack:init(x, y)
 
   self.margin = 8 
 
+  self.it = 1
   self.t = Trigger()
+end
+
+function CardStack:is_idle()
+  return self.it == 1
+end
+
+function CardStack:remove()
+  return table.remove(self.cards)
 end
 
 function CardStack:add(cardpos)
@@ -52,7 +61,7 @@ function CardStack:add(cardpos)
   end
   
   self.t:tween(0.3, self, { it = 1 }, math.sin_in_out, function()
-    self.it = 1.0
+    self.it = 1
   end, 'settle')
 
 end
@@ -75,20 +84,37 @@ end
 
 Foundation = Object:extend()
 function Foundation:init(x, y)
-  self.hiddens = CardStack(x, y)
+  self.downturned = CardStack(x, y)
+  self.upturned = nil
 end
 
 function Foundation:add_hidden(cardpos)
-  self.hiddens:add(cardpos)
+  self.downturned:add(cardpos)
+end
+
+
+function Foundation:reveal_soon(card)
+  self.to_reveal = card
 end
 
 function Foundation:update(dt)
-  self.hiddens:update(dt)
+  self.downturned:update(dt)
+
+  if self.to_reveal ~= nil and self.downturned:is_idle() then
+    if self.upturned == nil then
+      local reveal_at_pos = self.downturned:remove().pos
+
+      self.upturned = CardStack(reveal_at_pos.x, reveal_at_pos.y)
+
+      self.upturned:add(self.to_reveal)
+      self.to_reveal = nil
+    end
+  end
 end
 
 
 function Foundation:draw()
-  self.hiddens:draw()
+  self.downturned:draw()
 end
 
 StillCard = Object:extend()
@@ -151,8 +177,8 @@ function ShuffleUpAndSolitaire:init()
         local cardpos = table.remove(self.sc)
         self.solitaire.foundations[i]:add_hidden(cardpos)
       end)
-
     end 
+    self.solitaire.foundations[i]:reveal_soon(UpCard())
   end
 end
 
@@ -207,6 +233,15 @@ function Solitaire:draw()
   end
 
 end
+
+UpCard = Object:extend()
+UpCard:implement(Card)
+function UpCard:init()
+end
+
+function UpCard:draw(x, y)
+end
+
 
 BackCard = Object:extend()
 BackCard:implement(Card)
