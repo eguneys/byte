@@ -2,49 +2,109 @@ Card = Object:extend()
 function Card:init()
 end
 
+HasCard = Object:extend()
+function HasCard:init_card(card)
+  self.card = card
+end
+
+HasPos = Object:extend()
+function HasPos:init_pos(pos)
+  self.pos = pos
+end
+
+HasCardWithPos = Object:extend()
+HasCardWithPos:implement(HasCard)
+HasCardWithPos:implement(HasPos)
+function HasCardWithPos:init_card_pos(card, pos)
+  self:init_card(card)
+  self:init_pos(pos)
+end
+
+function HasCardWithPos:draw()
+  self.card:draw(self.pos.x, self.pos.y)
+end
 
 CardStack = Object:extend()
-function CardStack:init()
+CardStack:implement(HasPos)
+function CardStack:init(x, y)
+
+  self:init_pos(Vector(x, y))
+
+  self.targets = {}
+  self.bases = {}
   self.cards = { }
 
   self.margin = 8 
+
+  self.t = Trigger()
 end
 
-function CardStack:add(card)
-  table.insert(self.cards, card)
-end
+function CardStack:add(cardpos)
+  table.insert(self.cards, StillCard(cardpos.card, cardpos.pos))
 
-function CardStack:draw(x, y)
 
+  self.it = 0
+  self.bases = {}
+  self.targets = {}
   for i, card in ipairs(self.cards) do
-    card:draw(x, y + i * self.margin)
+    table.insert(self.bases, Vector(card.pos.x, card.pos.y))
+    table.insert(self.targets, Vector(self.pos.x, self.pos.y + i * self.margin))
+  end
+  
+  self.t:tween(0.3, self, { it = 1 }, math.sin_in_out, function()
+    self.it = 1.0
+  end, 'settle')
+
+end
+
+function CardStack:update(dt)
+
+  self.t:update(dt)
+  for i, card in ipairs(self.cards) do
+    card.pos = vlerp(self.it, self.bases[i], self.targets[i])
+  end
+end
+
+
+function CardStack:draw()
+  for i, card in ipairs(self.cards) do
+    card:draw()
   end
 end
 
 
 Foundation = Object:extend()
 function Foundation:init(x, y)
-  self.x, self.y = x, y
-  self.hiddens = CardStack()
+  self.hiddens = CardStack(x, y)
 end
 
-function Foundation:add_hidden(card)
-  self.hiddens:add(card)
+function Foundation:add_hidden(cardpos)
+  self.hiddens:add(cardpos)
 end
+
+function Foundation:update(dt)
+  self.hiddens:update(dt)
+end
+
 
 function Foundation:draw()
-  self.hiddens:draw(self.x, self.y)
+  self.hiddens:draw()
 end
 
+StillCard = Object:extend()
+StillCard:implement(HasCardWithPos)
+function StillCard:init(card, pos)
+  self:init_card_pos(card, pos)
+end
 
 ShuffleCard = Object:extend()
+ShuffleCard:implement(HasCardWithPos)
 function ShuffleCard:init(card)
-  self.pos = Vector(0, 0)
-  self.ipos = Vector(0, 0)
-  self.target = Vector(0, 0)
+  self:init_card_pos(card, Vector(0, 0))
+  self.ipos = Vector(180, 180)
+  self.target = Vector(self.ipos.x, self.ipos.y)
   self.it = 0
   self.delay = 0.1
-  self.card = card
 end
 
 function ShuffleCard:update(dt)
@@ -64,7 +124,6 @@ function ShuffleCard:update(dt)
   end
 end
 
-
 function vlerp(f, vsrc, vdst)
   return Vector(
   math.lerp(f, vsrc.x, vdst.x),
@@ -76,6 +135,49 @@ function ShuffleCard:draw()
   self.card:draw(self.pos.x, self.pos.y)
 end
 
+ShuffleUpAndSolitaire = Object:extend()
+function ShuffleUpAndSolitaire:init()
+  self.solitaire = Solitaire()
+
+  self.sc = {}
+
+  self.t = Trigger()
+
+  for i = 1,7 do
+    for j = 1, i do
+      table.insert(self.sc, ShuffleCard(BackCard()))
+
+      self.t:after(random:float(0.4, 0.6 + (1-i/7) * 0.4), function ()
+        local cardpos = table.remove(self.sc)
+        self.solitaire.foundations[i]:add_hidden(cardpos)
+      end)
+
+    end 
+  end
+end
+
+
+function ShuffleUpAndSolitaire:update(dt)
+
+  self.t:update(dt)
+  self.solitaire:update(dt)
+
+  for _, sc in ipairs(self.sc) do
+    sc:update(dt)
+  end
+end
+
+
+function ShuffleUpAndSolitaire:draw()
+
+  self.solitaire:draw()
+
+
+  for _, sc in ipairs(self.sc) do
+    sc:draw()
+  end
+
+end
 
 Solitaire = Object:extend()
 function Solitaire:init()
@@ -89,23 +191,13 @@ function Solitaire:init()
     Foundation(32 * 6 + 42, 0, 6),
   }
 
-
-  self.sc = {}
-  -- table.insert(self.sc, ShuffleCard(BackCard()))
-
-  for i = 1,7 do
-    for j = 1, i do
-      table.insert(self.sc, ShuffleCard(BackCard()))
-    end
-  end
-
 end
 
 function Solitaire:update(dt)
-  for _, sc in ipairs(self.sc) do
-    sc:update(dt)
-  end
 
+  for i, f in ipairs(self.foundations) do
+    f:update(dt)
+  end
 end
 
 function Solitaire:draw()
@@ -114,10 +206,6 @@ function Solitaire:draw()
     f:draw()
   end
 
-
-  for _, sc in ipairs(self.sc) do
-    sc:draw()
-  end
 end
 
 BackCard = Object:extend()
@@ -138,10 +226,17 @@ dbg = ''
 
 function Play:init()
 
-  self.solitaire = Solitaire()
+  self.solitaire = ShuffleUpAndSolitaire()
 end
 
 function Play:update(dt)
+
+
+  if Input:btn('left') > 0 then
+    self.solitaire = ShuffleUpAndSolitaire()
+  end
+
+
   self.solitaire:update(dt)
 end
 
