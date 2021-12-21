@@ -20,8 +20,17 @@ function HasCardWithPos:init_card_pos(card, pos)
   self:init_pos(pos)
 end
 
-function HasCardWithPos:draw_card_pos()
-  self.card:draw(self.pos.x, self.pos.y)
+function HasCardWithPos:hit(ox, oy, w, h, x, y)
+  return self.pos.x + ox < x and ox + self.pos.x + w > x and
+  oy + self.pos.y < y and oy + self.pos.y + h > y
+end
+
+function HasCardWithPos:decay(ox, oy, x, y)
+  return Vector(self.pos.x + ox - x, self.pos.y + oy - y)
+end
+
+function HasCardWithPos:draw_card_pos(x, y)
+  self.card:draw(x + self.pos.x, y + self.pos.y)
 end
 
 
@@ -64,21 +73,50 @@ function CardStack:add(cardpos)
 end
 
 function CardStack:top_target_pos()
-  return self.targets[#self.targets]
+  local res = self.targets[#self.targets]
+  if res ~= nil then
+    return res:add(self.pos.x, self.pos.y)
+  end
+end
+
+
+function CardStack:hit_target_index(x, y)
+  for i, card in ipairs(self.cards) do
+    local height = i == #self.cards and 40 or 8
+    if card:hit(self.pos.x, self.pos.y, 30, height, x, y) then
+      return i, card:decay(self.pos.x, self.pos.y, x, y)
+    end
+  end
+end
+
+
+function CardStack:cut(index)
+  local pos = self.cards[index].pos
+  local res = CardStack(self.pos.x + pos.x, self.pos.y + pos.y)
+  for i=#self.cards, index, -1 do
+    local card = table.remove(self.cards, i)
+    card.pos:add(self.pos.x, self.pos.y)
+    res:add(card)
+  end
+  return res
 end
 
 function CardStack:_do_add(cardpos)
   table.insert(self.cards, StillCard(cardpos.card, cardpos.pos))
+  self:_refresh_cardpos()
+end
 
+
+function CardStack:_refresh_cardpos()
   self.it = 0
   self.bases = {}
   self.targets = {}
   for i, card in ipairs(self.cards) do
-    table.insert(self.bases, Vector(card.pos.x, card.pos.y))
-    table.insert(self.targets, Vector(self.pos.x, self.pos.y + (i - 1) * self.margin))
+    table.insert(self.bases, Vector(card.pos.x - self.pos.x, card.pos.y - self.pos.y))
+    table.insert(self.targets, Vector(0, (i - 1) * self.margin))
   end
 
-  table.insert(self.targets, Vector(self.pos.x, self.pos.y + #self.cards * self.margin))
+  table.insert(self.targets, Vector(0, #self.cards * self.margin))
   
   self.t:tween(0.3, self, { it = 1 }, math.sine_in_out, function()
     self.it = 1
@@ -87,7 +125,6 @@ function CardStack:_do_add(cardpos)
 end
 
 function CardStack:update(dt)
-
   self.t:update(dt)
 
   for i = #self.to_adds, 1, -1 do
@@ -111,7 +148,7 @@ end
 
 function CardStack:draw()
   for i, card in ipairs(self.cards) do
-    card:draw()
+    card:draw(self.pos.x, self.pos.y)
   end
 
   for i, to_add in ipairs(self.to_adds) do
@@ -140,7 +177,19 @@ function Foundation:reveal_soon(card)
   self.to_reveal = card
 end
 
+
+function Foundation:drag_cut_stack(x, y)
+  local hit_index, hit_decay = self.upturned:hit_target_index(x, y)
+
+
+  if hit_index ~= nil then
+    return DragInfoSolitaire(self.upturned:cut(hit_index), hit_decay)
+  end
+
+end
+
 function Foundation:update(dt)
+
   self.downturned:update(dt)
 
 
@@ -190,6 +239,8 @@ function Foundation:draw()
   end
 end
 
+
+
 StillCard = Object:extend()
 StillCard:implement(HasCardWithPos)
 function StillCard:init(card, pos)
@@ -200,8 +251,8 @@ function StillCard:is_idle()
   return true
 end
 
-function StillCard:draw()
-  self:draw_card_pos()
+function StillCard:draw(x, y)
+  self:draw_card_pos(x, y)
 end
 
 
@@ -225,8 +276,8 @@ function RevealCard:update(dt)
   self.anim:update(dt)
 end
 
-function RevealCard:draw()
-  self.anim:draw(sprites, math.round(self.pos.x), math.round(self.pos.y))
+function RevealCard:draw(x, y)
+  self.anim:draw(sprites, math.round(x + self.pos.x), math.round(y + self.pos.y))
 end
 
 
@@ -263,8 +314,8 @@ function ShuffleCard:update(dt)
   end
 end
 
-function ShuffleCard:draw()
-  self:draw_card_pos()
+function ShuffleCard:draw(x, y)
+  self:draw_card_pos(x, y)
 end
 
 
@@ -275,6 +326,11 @@ function vlerp(f, vsrc, vdst)
   math.lerp(f, vsrc.y, vdst.y))
 end
 
+function vlerp_dt(f, dt, vsrc, vdst)
+  return Vector(
+  math.lerp_dt(f, dt, vsrc.x, vdst.x),
+  math.lerp_dt(f, dt, vsrc.y, vdst.y))
+end
 
 
 ShuffleUpAndSolitaire = Object:extend()
@@ -419,6 +475,23 @@ function Solitaire:init()
   self.stock = CardStack(8, 8, 0.1)
   self.waste = CardStack(8, 40 + 8 + 8)
 
+
+
+end
+
+function Solitaire:drag_start(x, y)
+
+  for _, foun in ipairs(self.foundations) do
+    local ds = foun:drag_cut_stack(x, y)
+    if ds then
+      self.ds = ds
+    end
+  end
+end
+
+function Solitaire:drag_stop()
+  if self.ds ~= nil then
+  end
 end
 
 function Solitaire:deal_stock3(cards)
@@ -436,12 +509,19 @@ end
 
 function Solitaire:update(dt)
 
+
+  if self.ds ~= nil then
+    self.ds:update(dt)
+  end
+
   for i, f in ipairs(self.foundations) do
     f:update(dt)
   end
 
   self.stock:update(dt)
   self.waste:update(dt)
+
+  local im = Mouse:btn()
 end
 
 function Solitaire:draw()
@@ -454,11 +534,41 @@ function Solitaire:draw()
   self.stock:draw()
   self.waste:draw()
 
+  if self.ds ~= nil then
+    self.ds:draw()
+  end
+
+
 end
+
+
+DragInfoSolitaire = Object:extend()
+function DragInfoSolitaire:init(stack, decay)
+  self.stack = stack
+  self.decay = decay
+  self.decay_target = Vector(-11, -4)
+end
+
+function DragInfoSolitaire:update(dt)
+  self.stack.pos:set(Mouse.x + self.decay.x, Mouse.y + self.decay.y)
+  self.stack:update(dt)
+
+  self.decay = vlerp_dt(0.1, dt, self.decay, self.decay_target)
+
+end
+
+
+function DragInfoSolitaire:draw()
+  self.stack:draw()
+end
+
+
 
 UpCard = Object:extend()
 UpCard:implement(Card)
 function UpCard:init(suit, rank)
+  self.suit = suit
+  self.rank = rank
   self.anim = anim8.newAnimation(g34(1, 1), 1)
   self.a_shadow = anim8.newAnimation(g34(3, 1), 1)
 
@@ -515,22 +625,42 @@ end
 
 MouseDraw = Object:extend()
 MouseDraw:implement(HasPos)
-function MouseDraw:init()
+function MouseDraw:init(drag)
   local x, y = Mouse.x, Mouse.y
   self:init_pos(Vector(x, y))
   self.anim = anim8.newAnimation(g128('1-2', 1), 1)
   self.anim:gotoFrame(1)
 
+  self.drag = drag
+end
+
+function MouseDraw:drag_start()
+  self.drag:drag_start(Mouse.x, Mouse.y)
+end
+
+function MouseDraw:drag_stop()
+  self.drag:drag_stop()
 end
 
 
 function MouseDraw:update(dt)
   self.pos:set(Mouse.x, Mouse.y)
-  if Mouse.cur ~= nil then
+
+  local im = Mouse:btn()
+
+  if im > 0 then
     self.anim:gotoFrame(2)
   else
     self.anim:gotoFrame(1)
   end
+
+
+  if im == 2 then
+    self:drag_start()
+  elseif im == -1 then
+    self:drag_stop()
+  end
+
 end
 
 function MouseDraw:draw()
@@ -549,16 +679,15 @@ function Play:init()
 
 
 
-  self.md = MouseDraw()
   self.solitaire = LoadSolitaire()
+  self.md = MouseDraw(self.solitaire.solitaire)
 end
 
 function Play:update(dt)
 
 
   if Input:btn('left') > 0 then
-    --self.solitaire = ShuffleUpAndSolitaire()
-    self.solitaire = LoadSolitaire()
+    self:init()
   end
 
 

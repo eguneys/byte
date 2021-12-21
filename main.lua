@@ -29,9 +29,10 @@ function love.load()
 end
 
 function love.update(dt)
-   Input:update(dt)
-   play:update(dt)
-   trigger:update(dt)
+  Mouse:update(dt)
+  Input:update(dt)
+  play:update(dt)
+  trigger:update(dt)
 end
 
 function love.draw()
