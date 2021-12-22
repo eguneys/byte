@@ -164,10 +164,13 @@ end
 
 Foundation = Object:extend()
 Foundation:implement(HasPos)
-function Foundation:init(x, y)
+function Foundation:init(logic, x, y, index)
   self:init_pos(Vector(x, y))
+  self.logic = logic
   self.downturned = CardStack(x, y)
   self.upturned = nil
+  self.index = index
+  self.dest_data = self.index * 100
 end
 
 function Foundation:add_hidden(cardpos)
@@ -192,12 +195,16 @@ function Foundation:drag_drop(stack)
   end
 end
 
+function Foundation:orig_data(hit_index)
+  return self.dest_data + hit_index
+end
+
 function Foundation:drag_cut_stack(x, y)
   local hit_index, hit_decay = self.upturned:hit_target_index(x, y)
 
 
   if hit_index ~= nil then
-    return DragInfoSolitaire(self.upturned:cut(hit_index), hit_decay, self)
+    return DragInfoSolitaire(self.logic, self.upturned:cut(hit_index), hit_decay, self, self:orig_data(hit_index))
   end
 end
 
@@ -426,10 +433,9 @@ end
 
 
 LoadSolitaire = Object:extend()
-function LoadSolitaire:init(data)
+function LoadSolitaire:init(logic, data)
 
-
-  self.solitaire = Solitaire()
+  self.solitaire = Solitaire(logic)
   self.md = MouseDraw(self.solitaire)
 
   for fi, fs in ipairs(data) do
@@ -468,29 +474,30 @@ end
 
 
 Solitaire = Object:extend()
-function Solitaire:init()
+function Solitaire:init(logic)
 
   self.bg = anim8.newAnimation(gbg(1, 1), 1)
 
-
   self.foundations = {
-    Foundation(33 * 0 + 50, 11, 0),
-    Foundation(33 * 1 + 50, 11, 1),
-    Foundation(33 * 2 + 50, 11, 2),
-    Foundation(33 * 3 + 50, 11, 3),
-    Foundation(33 * 4 + 50, 11, 4),
-    Foundation(33 * 5 + 50, 11, 5),
-    Foundation(33 * 6 + 50, 11, 6),
+    Foundation(logic, 33 * 0 + 50, 11, 1),
+    Foundation(logic, 33 * 1 + 50, 11, 2),
+    Foundation(logic, 33 * 2 + 50, 11, 3),
+    Foundation(logic, 33 * 3 + 50, 11, 4),
+    Foundation(logic, 33 * 4 + 50, 11, 5),
+    Foundation(logic, 33 * 5 + 50, 11, 6),
+    Foundation(logic, 33 * 6 + 50, 11, 7),
   }
 
   self.stock = CardStack(8, 8, 0.1)
   self.waste = CardStack(8, 40 + 8 + 8)
 
 
-
+  self.logic = logic
 end
 
 function Solitaire:drag_start(x, y)
+
+  if self.ds ~= nil then return end
 
   for _, foun in ipairs(self.foundations) do
     local ds = foun:drag_cut_stack(x, y)
@@ -507,13 +514,13 @@ function Solitaire:drag_stop(x, y)
     for _, foun in ipairs(self.foundations) do
       if foun:drag_drop_stack(x, y, self.ds.stack) then
         self.ds:drop(foun)
-        self.ds = nil
         return
       end
     end
 
-    self.ds:cancel()
-    self.ds = nil
+    if self.ds:cancel() then
+      self.ds = nil
+    end
   end
 end
 
@@ -570,23 +577,36 @@ function Solitaire:draw()
 end
 
 DragInfoSolitaire = Object:extend()
-function DragInfoSolitaire:init(stack, decay, target)
+function DragInfoSolitaire:init(logic, stack, decay, target, orig_data)
   self.stack = stack
   self.decay = decay
   self.decay_target = Vector(-11, -4)
   self.target = target
+  self.logic = logic
+  self.orig_data = orig_data
+
+  self.drop_sent = false
 end
 
 function DragInfoSolitaire:drop(foun)
-  foun:drag_drop(self.stack)
+  --foun:drag_drop(self.stack)
+  self.logic:out_drop(self.orig_data, foun.dest_data)
+  self.drop_sent = true
 end
 
 
 function DragInfoSolitaire:cancel()
+  if self.drop_sent then
+    return false
+  end
   self.target:drag_cancel(self.stack)
+  return true
 end
 
 function DragInfoSolitaire:update(dt)
+  if self.drop_sent then
+    return
+  end
   self.stack:smooth_move(Mouse.x + self.decay.x, Mouse.y + self.decay.y)
   self.stack:update(dt)
 
@@ -739,15 +759,18 @@ function SolitaireLogic:update(dt)
 
     if cmd == 'load' then
 
-      local fs = {
-        { 0, 1, 1, 1, 2, 1, 3 },
-        { 0 },
-        { 0, 1, 4 },
-        { 2, 2, 1, 3, 4 },
-        { 2, 3, 2, 4, 4 },
-        { 2, 3, 2, 4, 4, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3 },
-        { 5, 3, 2  }
-      }
+
+      local fs = {}
+
+      -- 0 1 1;1 3 2 2 2;0;0;0;4 1 2;2 1 2
+      for _ff in args:gmatch("([^;]+);?") do
+        local ff = {}
+        for d in _ff:gmatch("([^ ]+) ?") do
+          table.insert(ff, tonumber(d))
+        end
+        table.insert(fs, ff)
+      end
+
       self:in_load(fs)
     else
       print('Unrecognized cmd', cmd)
@@ -762,11 +785,11 @@ function SolitaireLogic:draw()
 end
 
 function SolitaireLogic:out_drop(orig, dest)
-
+  self.server:send(string.format('drop %02d %02d', orig, dest))
 end
 
 function SolitaireLogic:in_load(data)
-  self.scene = LoadSolitaire(data)
+  self.scene = LoadSolitaire(self, data)
 end
 
 function SolitaireLogic:in_drop(ok, oreveal)
@@ -786,7 +809,15 @@ function SolitaireServer:init()
 end
 
 function SolitaireServer:get()
-  table.insert(self.messages, 'load')
+  table.insert(self.messages, 'load 0 1 1;1 3 2 2 2;0;0;0;4 1 2;2 1 2')
+end
+
+function SolitaireServer:send(msg)
+  local cmd, args = msg:match("^(%a*) ?(.*)")
+
+  if cmd == 'drop' then
+    print(args)
+  end
 end
 
 function SolitaireServer:receive()
