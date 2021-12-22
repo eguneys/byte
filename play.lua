@@ -9,7 +9,7 @@ end
 
 HasPos = Object:extend()
 function HasPos:init_pos(pos)
-  self.pos = pos
+  self.pos = Vector(pos.x, pos.y)
 end
 
 HasCardWithPos = Object:extend()
@@ -18,24 +18,52 @@ HasCardWithPos:implement(HasPos)
 function HasCardWithPos:init_card_pos(card, pos)
   self:init_card(card)
   self:init_pos(pos)
+  self.local_pos = Vector(pos.x, pos.y)
+  self.stack_pos = Vector(0, 0)
+  self.t = Trigger()
 end
 
-function HasCardWithPos:attach_stack(stack)
+function HasCardWithPos:smooth_move_local(x, y)
 
+  self.t:tween(0.3, self.local_pos, { x=x, y=y }, math.sine_in_out, function()
+    self.local_pos:set(x, y)
+  end)
 end
 
-function HasCardWithPos:hit(ox, oy, w, h, x, y)
-  return self.pos.x + ox < x and ox + self.pos.x + w > x and
-  oy + self.pos.y < y and oy + self.pos.y + h > y
+function HasCardWithPos:smooth_move_stack(x, y, a)
+  self.t:tween(a or 0.3, self.stack_pos, { x=x, y=y }, math.sine_in_out, function()
+    self.stack_pos:set(x, y)
+  end)
 end
 
-function HasCardWithPos:decay(ox, oy, x, y)
-  return Vector(self.pos.x + ox - x, self.pos.y + oy - y)
+
+function HasCardWithPos:add_to_stack(x, y, target_local_y)
+  self.stack_pos:set(x, y)
+  self.local_pos:sub(x, y)
+  self:smooth_move_local(0, target_local_y)
 end
 
-function HasCardWithPos:draw_card_pos(x, y)
-  self.card:draw(x + self.pos.x, y + self.pos.y)
+
+function HasCardWithPos:update_card_pos(dt)
+  self.t:update(dt)
+  self.pos:set(self.local_pos.x + self.stack_pos.x,
+  self.local_pos.y + self.stack_pos.y)
 end
+
+function HasCardWithPos:draw_card_pos()
+  self.card:draw(self.pos.x, self.pos.y)
+end
+
+function HasCardWithPos:hit(w, h, x, y)
+  return self.pos.x < x and self.pos.x + w > x and
+  self.pos.y < y and self.pos.y + h > y
+end
+
+function HasCardWithPos:decay(x, y)
+  return Vector(self.pos.x - x, self.pos.y - y)
+end
+
+
 
 
 CardStack = Object:extend()
@@ -45,50 +73,30 @@ function CardStack:init(x, y, margin)
   self:init_pos(Vector(x, y))
 
   self.margin = margin or 8
-  self.targets = {}
-  self.bases = {}
   self.cards = { }
-
-  self.it = 1
-  self.t = Trigger()
-
-
-  self.to_adds = {}
-end
-
-function CardStack:is_idle()
-  return self.it == 1
 end
 
 function CardStack:remove()
   return table.remove(self.cards)
 end
 
-function CardStack:is_idle()
-  return #self.to_adds == 0 and self.it == 1
-end
-
-function CardStack:remove()
-  return table.remove(self.cards)
-end
-
-function CardStack:add(cardpos)
-  table.insert(self.to_adds, cardpos)
+function CardStack:smooth_move(x, y)
+  self.pos:set(x, y)
+  for i, card in ipairs(self.cards) do
+    card:smooth_move_stack(x, y, (i/#self.cards) * (i / #self.cards) * 0.1)
+  end
 end
 
 function CardStack:top_target_pos()
-  local res = self.targets[#self.targets]
-  if res ~= nil then
-    return res:add(self.pos.x, self.pos.y)
-  end
+  return Vector(self.pos.x, self.pos.y + #self.cards * self.margin)
 end
 
 
 function CardStack:hit_target_index(x, y)
   for i, card in ipairs(self.cards) do
     local height = i == #self.cards and 40 or 8
-    if card:hit(self.pos.x, self.pos.y, 30, height, x, y) then
-      return i, card:decay(self.pos.x, self.pos.y, x, y)
+    if card:hit(30, height, x, y) then
+      return i, card:decay(x, y)
     end
   end
 end
@@ -100,68 +108,39 @@ function CardStack:paste(stack)
 end
 
 function CardStack:cut(index)
+  -- TODO
   local pos = self.cards[index].pos
-  local res = CardStack(self.pos.x + pos.x, self.pos.y + pos.y)
+  local res = CardStack(pos.x, pos.y)
+  local tmp = {}
   for i=#self.cards, index, -1 do
     local card = table.remove(self.cards, i)
-    card.pos:add(self.pos.x, self.pos.y)
-    res:add(card)
+    table.insert(tmp, card)
+  end
+  for i=#tmp, 1, -1 do
+    res:add(tmp[i])
   end
   return res
 end
 
-function CardStack:_do_add(cardpos)
-  cardpos.pos:sub(self.pos.x, self.pos.y)
-  table.insert(self.cards, StillCard(cardpos.card, cardpos.pos))
-end
-
-
-function CardStack:_refresh_cardpos()
-  self.it = 0
-  self.bases = {}
-  self.targets = {}
-  for i, card in ipairs(self.cards) do
-    table.insert(self.bases, Vector(card.pos.x, card.pos.y))
-    table.insert(self.targets, Vector(0, (i - 1) * self.margin))
-  end
-
-  table.insert(self.targets, Vector(0, #self.cards * self.margin))
-  
-  self.t:tween(0.3, self, { it = 1 }, math.sine_in_out, function()
-    self.it = 1
-  end, 'settle')
-
+-- card 100 0
+-- stack 50
+-- card 50 50
+function CardStack:add(cardpos)
+  local card = StillCard(cardpos.card, cardpos.pos)
+  card:add_to_stack(self.pos.x, self.pos.y, #self.cards * self.margin)
+  table.insert(self.cards, card)
 end
 
 function CardStack:update(dt)
-  self.t:update(dt)
-
-  for i = #self.to_adds, 1, -1 do
-    local cardpos = self.to_adds[i]
-    if cardpos:is_idle() then
-      self:_do_add(cardpos)
-      table.remove(self.to_adds, i)
-    end
-  end
-  self:_refresh_cardpos()
-
   for i, card in ipairs(self.cards) do
-    card.pos = vlerp(self.it, self.bases[i], self.targets[i])
-  end
-
-  for i, to_add in ipairs(self.to_adds) do
-    to_add:update(dt)
+    card:update_card_pos(dt)
   end
 end
 
 
 function CardStack:draw()
   for i, card in ipairs(self.cards) do
-    card:draw(self.pos.x, self.pos.y)
-  end
-
-  for i, to_add in ipairs(self.to_adds) do
-    to_add:draw()
+    card:draw()
   end
 end
 
@@ -205,7 +184,7 @@ function Foundation:update(dt)
   self.downturned:update(dt)
 
 
-  if self.to_reveal ~= nil and #self.downturned.cards > 0 and self.downturned:is_idle() then
+  if self.to_reveal ~= nil and #self.downturned.cards > 0 then
     if self.upturned == nil then
      local reveal_at_pos = self.downturned:remove().pos
 
@@ -217,7 +196,7 @@ function Foundation:update(dt)
   end
 
 
-  if self.to_upturned ~= nil and self.downturned:is_idle() then
+  if self.to_upturned ~= nil then
     if self.upturned == nil then
       local target_pos = self.downturned:top_target_pos()
       if target_pos == nil then
@@ -263,8 +242,12 @@ function StillCard:is_idle()
   return true
 end
 
-function StillCard:draw(x, y)
-  self:draw_card_pos(x, y)
+function StillCard:update(dt)
+  self:update_card_pos(dt)
+end
+
+function StillCard:draw()
+  self:draw_card_pos()
 end
 
 
@@ -285,11 +268,12 @@ function RevealCard:is_idle()
 end
 
 function RevealCard:update(dt)
+  self:update_card_pos(dt)
   self.anim:update(dt)
 end
 
-function RevealCard:draw(x, y)
-  self.anim:draw(sprites, math.round(x + self.pos.x), math.round(y + self.pos.y))
+function RevealCard:draw()
+  self.anim:draw(sprites, math.round(self.pos.x), math.round(self.pos.y))
 end
 
 
@@ -326,8 +310,8 @@ function ShuffleCard:update(dt)
   end
 end
 
-function ShuffleCard:draw(x, y)
-  self:draw_card_pos(x, y)
+function ShuffleCard:draw()
+  self:draw_card_pos()
 end
 
 
@@ -497,6 +481,7 @@ function Solitaire:drag_start(x, y)
     local ds = foun:drag_cut_stack(x, y)
     if ds then
       self.ds = ds
+      return
     end
   end
 end
@@ -504,6 +489,7 @@ end
 function Solitaire:drag_stop()
   if self.ds ~= nil then
     self.ds:cancel()
+    self.ds = nil
   end
 end
 
@@ -567,7 +553,7 @@ function DragInfoSolitaire:cancel()
 end
 
 function DragInfoSolitaire:update(dt)
-  self.stack.pos:set(Mouse.x + self.decay.x, Mouse.y + self.decay.y)
+  self.stack:smooth_move(Mouse.x + self.decay.x, Mouse.y + self.decay.y)
   self.stack:update(dt)
 
   self.decay = vlerp_dt(0.1, dt, self.decay, self.decay_target)
@@ -626,20 +612,6 @@ function BackCard:draw(x, y)
   self.anim:draw(sprites, x, y)
 end
 
-
-Showcase = Object:extend()
-function Showcase:init()
-  self.r = RevealCard(UpCard(1, 1), Vector(50, 50))
-end
-
-function Showcase:update(dt)
-  self.r:update(dt)
-end
-
-function Showcase:draw()
-  self.r:draw()
-end
-
 MouseDraw = Object:extend()
 MouseDraw:implement(HasPos)
 function MouseDraw:init(drag)
@@ -686,6 +658,39 @@ function MouseDraw:draw()
   self.anim:draw(sprites, x, y)
 end
 
+
+
+Showcase = Object:extend()
+function Showcase:init()
+  self.r = RevealCard(UpCard(1, 1), Vector(50, 50))
+
+  self.r:smooth_move_local(100, 100)
+  self.r:smooth_move_stack(10, 10)
+
+
+  self.cs = CardStack(80, 0)
+
+  self.cs:add(StillCard(UpCard(1, 1), Vector(20, 0)))
+  self.cs:add(RevealCard(UpCard(2, 2), Vector(300, 0)))
+  self.cs:add(RevealCard(UpCard(2, 2), Vector(300, 0)))
+  self.cs:add(RevealCard(UpCard(2, 2), Vector(300, 0)))
+end
+
+function Showcase:update(dt)
+  self.r:update(dt)
+  self.cs:update(dt)
+end
+
+function Showcase:draw()
+  self.r:draw()
+  self.cs:draw()
+end
+
+
+
+
+
+
 Play = Object:extend()
 
 dbg = ''
@@ -695,9 +700,13 @@ function Play:init()
   print('[Init] Play')
 
 
+  self.sc = Showcase()
 
   self.solitaire = LoadSolitaire()
   self.md = MouseDraw(self.solitaire.solitaire)
+
+
+  self.scene = self.solitaire
 end
 
 function Play:update(dt)
@@ -709,15 +718,14 @@ function Play:update(dt)
 
 
   self.md:update(dt)
-  self.solitaire:update(dt)
+  self.scene:update(dt)
 end
 
 function Play:draw()
 
 
-  self.solitaire:draw()
+  self.scene:draw()
   self.md:draw()
-
 
   if dbg then
     love.graphics.setColor(1,0,0,1)
