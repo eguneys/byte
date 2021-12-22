@@ -426,22 +426,13 @@ end
 
 
 LoadSolitaire = Object:extend()
-function LoadSolitaire:init()
+function LoadSolitaire:init(data)
 
-
-  self.fs = {
-    { 0, 1, 1, 1, 2, 1, 3 },
-    { 0 },
-    { 0, 1, 4 },
-    { 2, 2, 1, 3, 4 },
-    { 2, 3, 2, 4, 4 },
-    { 2, 3, 2, 4, 4, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3 },
-    { 5, 3, 2  }
-  }
 
   self.solitaire = Solitaire()
+  self.md = MouseDraw(self.solitaire)
 
-  for fi, fs in ipairs(self.fs) do
+  for fi, fs in ipairs(data) do
     local foun = self.solitaire.foundations[fi]
     local hidden = fs[1]
 
@@ -465,11 +456,13 @@ end
 
 function LoadSolitaire:update(dt)
   self.solitaire:update(dt)
+  self.md:update(dt)
 end
 
 
 function LoadSolitaire:draw()
   self.solitaire:draw()
+  self.md:draw()
 end
 
 
@@ -729,6 +722,76 @@ end
 
 
 
+SolitaireLogic = Object:extend()
+function SolitaireLogic:init(server)
+  self.server = server
+  self.scene = ShuffleUpAndSolitaire()
+  self.server:get()
+end
+
+
+function SolitaireLogic:update(dt)
+  repeat
+    local data = self.server:receive()
+ 
+    if data == nil then break end
+    local cmd, args = data:match("^(%a*) ?(.*)")
+
+    if cmd == 'load' then
+
+      local fs = {
+        { 0, 1, 1, 1, 2, 1, 3 },
+        { 0 },
+        { 0, 1, 4 },
+        { 2, 2, 1, 3, 4 },
+        { 2, 3, 2, 4, 4 },
+        { 2, 3, 2, 4, 4, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3 },
+        { 5, 3, 2  }
+      }
+      self:in_load(fs)
+    else
+      print('Unrecognized cmd', cmd)
+    end
+  until data == nil
+  self.scene:update(dt)
+end
+
+
+function SolitaireLogic:draw()
+  self.scene:draw()
+end
+
+function SolitaireLogic:out_drop(orig, dest)
+
+end
+
+function SolitaireLogic:in_load(data)
+  self.scene = LoadSolitaire(data)
+end
+
+function SolitaireLogic:in_drop(ok, oreveal)
+  if ok then
+    if oreveal ~= nil then
+    end
+  end
+end
+
+function SolitaireLogic:in_cancel()
+end
+
+
+SolitaireServer = Object:extend()
+function SolitaireServer:init()
+  self.messages = {}
+end
+
+function SolitaireServer:get()
+  table.insert(self.messages, 'load')
+end
+
+function SolitaireServer:receive()
+  return table.remove(self.messages)
+end
 
 
 
@@ -741,32 +804,23 @@ function Play:init()
   print('[Init] Play')
 
 
-  self.sc = Showcase()
-
-  self.solitaire = LoadSolitaire()
-  self.md = MouseDraw(self.solitaire.solitaire)
-
-
-  self.scene = self.solitaire
+  local server = SolitaireServer()
+  self.logic = SolitaireLogic(server)
 end
+
+
+
+
 
 function Play:update(dt)
 
-
-  if Input:btn('left') > 0 then
-    self:init()
-  end
-
-
-  self.md:update(dt)
-  self.scene:update(dt)
+  self.logic:update(dt)
 end
 
 function Play:draw()
 
+  self.logic:draw()
 
-  self.scene:draw()
-  self.md:draw()
 
   if dbg then
     love.graphics.setColor(1,0,0,1)
