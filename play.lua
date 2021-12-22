@@ -27,13 +27,19 @@ function HasCardWithPos:smooth_move_local(x, y)
 
   self.t:tween(0.3, self.local_pos, { x=x, y=y }, math.sine_in_out, function()
     self.local_pos:set(x, y)
-  end)
+  end, 'local_tween')
 end
 
 function HasCardWithPos:smooth_move_stack(x, y, a)
-  self.t:tween(a or 0.3, self.stack_pos, { x=x, y=y }, math.sine_in_out, function()
+  self.t:tween(a, self.stack_pos, { x=x, y=y }, math.sine_in_out, function()
     self.stack_pos:set(x, y)
-  end)
+  end, 'stack_tween')
+end
+
+
+function HasCardWithPos:has_tween()
+  return self.t.triggers['local_tween'] ~= nil or 
+  self.t.triggers['stack_tween'] ~= nil
 end
 
 
@@ -50,8 +56,13 @@ function HasCardWithPos:update_card_pos(dt)
   self.local_pos.y + self.stack_pos.y)
 end
 
-function HasCardWithPos:draw_card_pos()
+function HasCardWithPos:draw_card_pos(pass)
+  if pass == 2 and not self:has_tween() then return end
   self.card:draw(self.pos.x, self.pos.y)
+end
+
+function HasCardWithPos:draw(pass)
+  return self:draw_card_pos(pass)
 end
 
 function HasCardWithPos:hit(w, h, x, y)
@@ -83,7 +94,7 @@ end
 function CardStack:smooth_move(x, y)
   self.pos:set(x, y)
   for i, card in ipairs(self.cards) do
-    card:smooth_move_stack(x, y, (i/#self.cards) * (i / #self.cards) * 0.1)
+    card:smooth_move_stack(x, y, (i/15) * 0.2)
   end
 end
 
@@ -99,6 +110,12 @@ function CardStack:hit_target_index(x, y)
       return i, card:decay(x, y)
     end
   end
+end
+
+function CardStack:hit_target_front(x, y)
+  if #self.cards == 0 then return false end
+  local card = self.cards[#self.cards]
+  return card:hit(30, 40, x, y)
 end
 
 function CardStack:paste(stack)
@@ -138,9 +155,9 @@ function CardStack:update(dt)
 end
 
 
-function CardStack:draw()
+function CardStack:draw(pass)
   for i, card in ipairs(self.cards) do
-    card:draw()
+    card:draw(pass)
   end
 end
 
@@ -169,6 +186,12 @@ function Foundation:drag_cancel(stack)
   self.upturned:paste(stack) 
 end
 
+function Foundation:drag_drop(stack)
+  for _, card in ipairs(stack.cards) do 
+    self.upturned:add(card)
+  end
+end
+
 function Foundation:drag_cut_stack(x, y)
   local hit_index, hit_decay = self.upturned:hit_target_index(x, y)
 
@@ -176,7 +199,13 @@ function Foundation:drag_cut_stack(x, y)
   if hit_index ~= nil then
     return DragInfoSolitaire(self.upturned:cut(hit_index), hit_decay, self)
   end
+end
 
+function Foundation:drag_drop_stack(x, y, stack)
+
+  if self.upturned:hit_target_front(x, y) then
+    return true
+  end
 end
 
 function Foundation:update(dt)
@@ -223,10 +252,10 @@ function Foundation:update(dt)
 end
 
 
-function Foundation:draw()
-  self.downturned:draw()
+function Foundation:draw(pass)
+  self.downturned:draw(pass)
   if self.upturned then
-    self.upturned:draw()
+    self.upturned:draw(pass)
   end
 end
 
@@ -245,11 +274,6 @@ end
 function StillCard:update(dt)
   self:update_card_pos(dt)
 end
-
-function StillCard:draw()
-  self:draw_card_pos()
-end
-
 
 RevealCard = Object:extend()
 RevealCard:implement(HasCardWithPos)
@@ -272,8 +296,12 @@ function RevealCard:update(dt)
   self.anim:update(dt)
 end
 
-function RevealCard:draw()
+function RevealCard:draw(pass)
   self.anim:draw(sprites, math.round(self.pos.x), math.round(self.pos.y))
+end
+
+
+function RevealCard:draw_back()
 end
 
 
@@ -309,12 +337,6 @@ function ShuffleCard:update(dt)
     self.pos = vlerp(t, self.ipos, self.target)
   end
 end
-
-function ShuffleCard:draw()
-  self:draw_card_pos()
-end
-
-
 
 function vlerp(f, vsrc, vdst)
   return Vector(
@@ -486,8 +508,17 @@ function Solitaire:drag_start(x, y)
   end
 end
 
-function Solitaire:drag_stop()
+function Solitaire:drag_stop(x, y)
   if self.ds ~= nil then
+
+    for _, foun in ipairs(self.foundations) do
+      if foun:drag_drop_stack(x, y, self.ds.stack) then
+        self.ds:drop(foun)
+        self.ds = nil
+        return
+      end
+    end
+
     self.ds:cancel()
     self.ds = nil
   end
@@ -527,11 +558,16 @@ function Solitaire:draw()
 
   self.bg:draw(sprites2, 0, 0)
   for i, f in ipairs(self.foundations) do
-    f:draw()
+   f:draw(1)
   end
 
   self.stock:draw()
   self.waste:draw()
+
+
+  for i, f in ipairs(self.foundations) do
+    f:draw(2)
+  end
 
   if self.ds ~= nil then
     self.ds:draw()
@@ -547,6 +583,11 @@ function DragInfoSolitaire:init(stack, decay, target)
   self.decay_target = Vector(-11, -4)
   self.target = target
 end
+
+function DragInfoSolitaire:drop(foun)
+  foun:drag_drop(self.stack)
+end
+
 
 function DragInfoSolitaire:cancel()
   self.target:drag_cancel(self.stack)
@@ -628,7 +669,7 @@ function MouseDraw:drag_start()
 end
 
 function MouseDraw:drag_stop()
-  self.drag:drag_stop()
+  self.drag:drag_stop(Mouse.x, Mouse.y)
 end
 
 
