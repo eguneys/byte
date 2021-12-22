@@ -20,6 +20,10 @@ function HasCardWithPos:init_card_pos(card, pos)
   self:init_pos(pos)
 end
 
+function HasCardWithPos:attach_stack(stack)
+
+end
+
 function HasCardWithPos:hit(ox, oy, w, h, x, y)
   return self.pos.x + ox < x and ox + self.pos.x + w > x and
   oy + self.pos.y < y and oy + self.pos.y + h > y
@@ -89,6 +93,11 @@ function CardStack:hit_target_index(x, y)
   end
 end
 
+function CardStack:paste(stack)
+  for _, card in ipairs(stack.cards) do
+    self:add(card)
+  end
+end
 
 function CardStack:cut(index)
   local pos = self.cards[index].pos
@@ -102,8 +111,8 @@ function CardStack:cut(index)
 end
 
 function CardStack:_do_add(cardpos)
+  cardpos.pos:sub(self.pos.x, self.pos.y)
   table.insert(self.cards, StillCard(cardpos.card, cardpos.pos))
-  self:_refresh_cardpos()
 end
 
 
@@ -112,7 +121,7 @@ function CardStack:_refresh_cardpos()
   self.bases = {}
   self.targets = {}
   for i, card in ipairs(self.cards) do
-    table.insert(self.bases, Vector(card.pos.x - self.pos.x, card.pos.y - self.pos.y))
+    table.insert(self.bases, Vector(card.pos.x, card.pos.y))
     table.insert(self.targets, Vector(0, (i - 1) * self.margin))
   end
 
@@ -134,7 +143,7 @@ function CardStack:update(dt)
       table.remove(self.to_adds, i)
     end
   end
-
+  self:_refresh_cardpos()
 
   for i, card in ipairs(self.cards) do
     card.pos = vlerp(self.it, self.bases[i], self.targets[i])
@@ -177,13 +186,16 @@ function Foundation:reveal_soon(card)
   self.to_reveal = card
 end
 
+function Foundation:drag_cancel(stack)
+  self.upturned:paste(stack) 
+end
 
 function Foundation:drag_cut_stack(x, y)
   local hit_index, hit_decay = self.upturned:hit_target_index(x, y)
 
 
   if hit_index ~= nil then
-    return DragInfoSolitaire(self.upturned:cut(hit_index), hit_decay)
+    return DragInfoSolitaire(self.upturned:cut(hit_index), hit_decay, self)
   end
 
 end
@@ -491,6 +503,7 @@ end
 
 function Solitaire:drag_stop()
   if self.ds ~= nil then
+    self.ds:cancel()
   end
 end
 
@@ -541,12 +554,16 @@ function Solitaire:draw()
 
 end
 
-
 DragInfoSolitaire = Object:extend()
-function DragInfoSolitaire:init(stack, decay)
+function DragInfoSolitaire:init(stack, decay, target)
   self.stack = stack
   self.decay = decay
   self.decay_target = Vector(-11, -4)
+  self.target = target
+end
+
+function DragInfoSolitaire:cancel()
+  self.target:drag_cancel(self.stack)
 end
 
 function DragInfoSolitaire:update(dt)
