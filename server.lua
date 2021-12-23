@@ -16,10 +16,8 @@ function table_slice(src, from, to)
   to = to or #src
 
   local res = {}
-  for i=1,#src do
-    if i > to then break end
+  for i=1,to do
     if i >= from then
-
       table.insert(res, src[i])
     end
   end
@@ -27,6 +25,7 @@ function table_slice(src, from, to)
 end
 
 function table_write(table, sep)
+  sep = sep or ' '
   local res = table[1] 
   for i=2,#table do
     res = res .. sep .. table[i]
@@ -46,7 +45,7 @@ end
 
 OCardStack = Object:extend()
 function OCardStack:init(cards)
-  self.cards = cards
+  self.cards = table_slice(cards)
 end
 
 function OCardStack:pop(n)
@@ -103,7 +102,8 @@ function OFoundation:cut(n)
   local stack = self.upturned:cut(n)
   if self.upturned:is_empty() then
     if not self.downturned:is_empty() then
-      local oreveal = self.downturned:cut(1)[1]
+      -- TODO may not be a pop but shift
+      local oreveal = self.downturned:pop(1)[1]
       self.upturned:push(oreveal)
       return stack, oreveal
     end

@@ -168,21 +168,27 @@ function Foundation:init(logic, x, y, index)
   self:init_pos(Vector(x, y))
   self.logic = logic
   self.downturned = CardStack(x, y)
-  self.upturned = nil
+  self.upturned = CardStack(x, y)
   self.index = index
   self.dest_data = self.index * 100
 end
 
 function Foundation:add_hidden(cardpos)
   self.downturned:add(cardpos)
+  local target_pos = self.downturned:top_target_pos()
+  self.upturned:smooth_move(target_pos.x, target_pos.y)
 end
 
-function Foundation:add_upturned(ss_cardpos)
-  self.to_upturned = ss_cardpos
+function Foundation:add_upturned(cardpos)
+  self.upturned:add(cardpos)
 end
 
-function Foundation:reveal_soon(card)
-  self.to_reveal = card
+function Foundation:reveal(card)
+  local reveal_at_pos = self.downturned:remove().pos
+  local target_pos = self.downturned:top_target_pos()
+
+  self.upturned:smooth_move(target_pos.x, target_pos.y)
+  self.upturned:add(RevealCard(card, reveal_at_pos))
 end
 
 function Foundation:drag_cancel(stack)
@@ -216,46 +222,8 @@ function Foundation:drag_test_drop_stack(x, y, stack)
 end
 
 function Foundation:update(dt)
-
   self.downturned:update(dt)
-
-
-  if self.to_reveal ~= nil and #self.downturned.cards > 0 then
-    if self.upturned == nil then
-     local reveal_at_pos = self.downturned:remove().pos
-
-     self.upturned = CardStack(reveal_at_pos.x, reveal_at_pos.y)
-
-     self.upturned:add(RevealCard(self.to_reveal, reveal_at_pos))
-     self.to_reveal = nil
-    end
-  end
-
-
-  if self.to_upturned ~= nil then
-    if self.upturned == nil then
-      local target_pos = self.downturned:top_target_pos()
-      if target_pos == nil then
-        target_pos = self.pos
-      end
-      self.upturned = CardStack(target_pos.x, target_pos.y)
-    end
-    for _, cardpos in ipairs(self.to_upturned) do
-      self.upturned:add(cardpos)
-    end
-    self.to_upturned = nil
-  end
-
-
-
-
-
-
-  self.downturned:update(dt)
-  if self.upturned then
-    self.upturned:update(dt)
-  end
-  
+  self.upturned:update(dt)
 end
 
 
@@ -382,7 +350,7 @@ function ShuffleUpAndSolitaire:init()
       end)
     end 
     self.t:after(max_delay + 0.2, function ()
-      self.solitaire.foundations[i]:reveal_soon(UpCard(4, 12))
+      self.solitaire.foundations[i]:reveal(UpCard(4, 12))
     end)
   end
 
@@ -448,13 +416,11 @@ function LoadSolitaire:init(logic, data)
       ))
     end
 
-    local ss_upturned = {}
     for i=2,#fs, 2 do
       local suit, rank = fs[i], fs[i+1]
-      table.insert(ss_upturned, StillCard(UpCard(suit, rank), foun.downturned.pos))
+      foun:add_upturned(StillCard(UpCard(suit, rank), foun.downturned.pos))
     end
 
-    foun:add_upturned(ss_upturned)
   end
 
 
@@ -607,7 +573,9 @@ function DragInfoSolitaire:init(logic, stack, decay, target, orig_data)
 end
 
 function DragInfoSolitaire:in_drop(oreveal)
-  self.target:reveal_soon(UpCard(oreveal[1], oreveal[2]))
+  if oreveal ~= nil then
+    self.target:reveal(UpCard(oreveal[1], oreveal[2]))
+  end
   self.drop_sent:in_drop(self.stack)
   self.drop_sent = nil
 end
@@ -777,6 +745,13 @@ end
 
 
 function SolitaireLogic:update(dt)
+
+  if Input:btn('left') == 2 then
+    self.server:get()
+  end
+
+
+
   repeat
     local data = self.server:receive()
  
@@ -795,9 +770,12 @@ function SolitaireLogic:update(dt)
 
       self:in_load(fs)
     elseif cmd == 'drop' then
-      local _, _, ok, oreveal = args:find("^([^;]*);?(.*)$")
+      local _, _, ok, oreveal = args:find("^([^;]*);?(.+)$")
 
-      self:in_drop(ok, read_card(oreveal))
+      
+      oreveal = oreveal ~= nil and read_card(oreveal) or nil
+
+      self:in_drop(ok, oreveal)
     else
       print('Unrecognized cmd', cmd)
     end
@@ -843,7 +821,6 @@ function Play:init()
   local server = SolitaireServer()
   self.logic = SolitaireLogic(server)
 end
-
 
 function read_card(str)
   local res = {}
