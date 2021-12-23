@@ -189,7 +189,7 @@ function Foundation:drag_cancel(stack)
   self.upturned:paste(stack) 
 end
 
-function Foundation:drag_drop(stack)
+function Foundation:in_drop(stack)
   for _, card in ipairs(stack.cards) do 
     self.upturned:add(card)
   end
@@ -199,7 +199,7 @@ function Foundation:orig_data(hit_index)
   return self.dest_data + hit_index
 end
 
-function Foundation:drag_cut_stack(x, y)
+function Foundation:drag_test_cut_stack(x, y)
   local hit_index, hit_decay = self.upturned:hit_target_index(x, y)
 
 
@@ -208,7 +208,7 @@ function Foundation:drag_cut_stack(x, y)
   end
 end
 
-function Foundation:drag_drop_stack(x, y, stack)
+function Foundation:drag_test_drop_stack(x, y, stack)
 
   if self.upturned:hit_target_front(x, y) then
     return true
@@ -500,7 +500,7 @@ function Solitaire:drag_start(x, y)
   if self.ds ~= nil then return end
 
   for _, foun in ipairs(self.foundations) do
-    local ds = foun:drag_cut_stack(x, y)
+    local ds = foun:drag_test_cut_stack(x, y)
     if ds then
       self.ds = ds
       return
@@ -512,7 +512,7 @@ function Solitaire:drag_stop(x, y)
   if self.ds ~= nil then
 
     for _, foun in ipairs(self.foundations) do
-      if foun:drag_drop_stack(x, y, self.ds.stack) then
+      if foun:drag_test_drop_stack(x, y, self.ds.stack) then
         self.ds:drop(foun)
         return
       end
@@ -526,16 +526,15 @@ end
 
 
 function Solitaire:in_drop(oreveal)
-  if ~self.ds then
+  if self.ds == nil then
     return self.logic:sync()
   end
 
-
-
+  self.ds:in_drop(oreveal)
 end
 
 function Solitaire:in_drop_cancel()
-  if ~self.ds then
+  if self.ds == nil then
     return self.logic:sync()
   end
   self.ds:cancel(true)
@@ -602,20 +601,25 @@ function DragInfoSolitaire:init(logic, stack, decay, target, orig_data)
   self.logic = logic
   self.orig_data = orig_data
 
-  self.drop_sent = false
+  self.drop_sent = nil
+end
+
+function DragInfoSolitaire:in_drop()
+  self.drop_sent:in_drop(self.stack)
+  self.drop_sent = nil
 end
 
 function DragInfoSolitaire:drop(foun)
-  if self.drop_sent then
+  if self.drop_sent ~= nil then
     return
   end
   self.logic:out_drop(self.orig_data, foun.dest_data)
-  self.drop_sent = true
+  self.drop_sent = foun
 end
 
 
 function DragInfoSolitaire:cancel(force)
-  if self.drop_sent then
+  if self.drop_sent ~= nil then
     return false
   end
   self.target:drag_cancel(self.stack)
@@ -623,7 +627,7 @@ function DragInfoSolitaire:cancel(force)
 end
 
 function DragInfoSolitaire:update(dt)
-  if self.drop_sent then
+  if self.drop_sent ~= nil then
     return
   end
   self.stack:smooth_move(Mouse.x + self.decay.x, Mouse.y + self.decay.y)
@@ -792,7 +796,6 @@ function SolitaireLogic:update(dt)
 
       self:in_load(fs)
     elseif cmd == 'drop' then
-      print(args)
       local ok, oreveal = args:find("^(.*);(.*)$")
 
       self:in_drop(ok, oreveal)
