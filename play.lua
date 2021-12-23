@@ -66,14 +66,21 @@ function HasCardWithPos:draw(pass)
 end
 
 function HasCardWithPos:hit(w, h, x, y)
-  return self.pos.x < x and self.pos.x + w > x and
-  self.pos.y < y and self.pos.y + h > y
+  return hit_test_rect(self.pos.x, 
+  self.pos.y,
+  w, h, x, y)
 end
 
 function HasCardWithPos:decay(x, y)
   return Vector(self.pos.x - x, self.pos.y - y)
 end
 
+
+function hit_test_rect(x, y, w, h, ax, ay)
+return x < ax and x + w > ax and
+  y < ay and y + h > ay
+
+end
 
 
 
@@ -86,6 +93,11 @@ function CardStack:init(x, y, margin)
   self.margin = margin or 8
   self.cards = { }
 end
+
+function CardStack:is_empty()
+  return #self.cards == 0
+end
+
 
 function CardStack:remove()
   return table.remove(self.cards)
@@ -116,6 +128,12 @@ function CardStack:hit_target_front(x, y)
   if #self.cards == 0 then return false end
   local card = self.cards[#self.cards]
   return card:hit(30, 40, x, y)
+end
+
+function CardStack:hit_target_empty(x, y)
+  if #self.cards ~= 0 then return false end
+  return hit_test_rect(self.pos.x,
+  self.pos.y, 30, 40, x, y)
 end
 
 function CardStack:paste(stack)
@@ -216,8 +234,10 @@ end
 
 function Foundation:drag_test_drop_stack(x, y, stack)
 
-  if self.upturned:hit_target_front(x, y) then
-    return true
+  if self.upturned:is_empty() and self.downturned:is_empty() then
+    return self.downturned:hit_target_empty(x, y)
+  else
+    return self.upturned:hit_target_front(x, y)
   end
 end
 
@@ -757,6 +777,7 @@ function SolitaireLogic:update(dt)
  
     if data == nil then break end
     local cmd, args = data:match("^(%a*) ?(.*)")
+    print(cmd, args)
 
     if cmd == 'load' then
 
@@ -770,12 +791,16 @@ function SolitaireLogic:update(dt)
 
       self:in_load(fs)
     elseif cmd == 'drop' then
-      local _, _, ok, oreveal = args:find("^([^;]*);?(.+)$")
+      if args == 'cancel' then
+        self:in_drop_cancel()
+      else 
+        -- https://stackoverflow.com/questions/70458771/capture-word-a-or-b-and-part-of-optional-extra-arguments
+        local _, _, ok, oreveal = args:find("^(ok%f[%A]);?(.+)$")
 
-      
-      oreveal = oreveal ~= nil and read_card(oreveal) or nil
+        oreveal = oreveal ~= nil and read_card(oreveal) or nil
 
-      self:in_drop(ok, oreveal)
+        self:in_drop(oreveal)
+      end
     else
       print('Unrecognized cmd', cmd)
     end
@@ -796,14 +821,12 @@ function SolitaireLogic:in_load(data)
   self.scene = LoadSolitaire(self, data)
 end
 
-function SolitaireLogic:in_drop(ok, oreveal)
-  if ok == 'ok' then
-    self.scene.solitaire:in_drop(oreveal)
-    if oreveal ~= nil then
-    end
-  else
+function SolitaireLogic:in_drop(oreveal)
+  self.scene.solitaire:in_drop(oreveal)
+end
+
+function SolitaireLogic:in_drop_cancel()
     self.scene.solitaire:in_drop_cancel()
-  end
 end
 
 function SolitaireLogic:in_cancel()
