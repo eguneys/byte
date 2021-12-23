@@ -57,6 +57,14 @@ function OCardStack:pop(n)
   return res
 end
 
+function OCardStack:is_empty()
+  return #self.cards == 0
+end
+
+function OCardStack:push(card)
+  table.insert(self.cards, card)
+end
+
 function OCardStack:cut(index)
   local res = table_slice(self.cards, index, #self.cards)
   self.cards = table_slice(self.cards, 1, index - 1)
@@ -92,7 +100,15 @@ function OFoundation:init(downturned, upturned)
 end
 
 function OFoundation:cut(n)
-  return self.upturned:cut(n)
+  local stack = self.upturned:cut(n)
+  if self.upturned:is_empty() then
+    if not self.downturned:is_empty() then
+      local oreveal = self.downturned:cut(1)[1]
+      self.upturned:push(oreveal)
+      return stack, oreveal
+    end
+  end
+  return stack
 end
 
 function OFoundation:paste(stack)
@@ -124,11 +140,11 @@ function OSolitaire:drop(orig_data, dest_data)
   local f_index, stack_index = math.floor(orig_data / 100), orig_data % 100
   local dest_index = dest_data / 100
 
-  local stack = self.fs[f_index]:cut(stack_index)
+  local stack, oreveal = self.fs[f_index]:cut(stack_index)
 
   self.fs[dest_index]:paste(stack)
 
-  return 'drop'
+  return 'drop', oreveal
 end
 
 function OSolitaire:write()

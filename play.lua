@@ -531,6 +531,7 @@ function Solitaire:in_drop(oreveal)
   end
 
   self.ds:in_drop(oreveal)
+  self.ds = nil
 end
 
 function Solitaire:in_drop_cancel()
@@ -538,6 +539,7 @@ function Solitaire:in_drop_cancel()
     return self.logic:sync()
   end
   self.ds:cancel(true)
+  self.ds = nil
 end
 
 function Solitaire:deal_stock3(cards)
@@ -604,7 +606,8 @@ function DragInfoSolitaire:init(logic, stack, decay, target, orig_data)
   self.drop_sent = nil
 end
 
-function DragInfoSolitaire:in_drop()
+function DragInfoSolitaire:in_drop(oreveal)
+  self.target:reveal_soon(UpCard(oreveal[1], oreveal[2]))
   self.drop_sent:in_drop(self.stack)
   self.drop_sent = nil
 end
@@ -787,18 +790,14 @@ function SolitaireLogic:update(dt)
 
       -- 0 1 1;1 3 2 2 2;0;0;0;4 1 2;2 1 2
       for _ff in args:gmatch("([^;]+);?") do
-        local ff = {}
-        for d in _ff:gmatch("([^ ]+) ?") do
-          table.insert(ff, tonumber(d))
-        end
-        table.insert(fs, ff)
+        table.insert(fs, read_card(_ff))
       end
 
       self:in_load(fs)
     elseif cmd == 'drop' then
-      local ok, oreveal = args:find("^(.*);(.*)$")
+      local _, _, ok, oreveal = args:find("^([^;]*);?(.*)$")
 
-      self:in_drop(ok, oreveal)
+      self:in_drop(ok, read_card(oreveal))
     else
       print('Unrecognized cmd', cmd)
     end
@@ -846,6 +845,13 @@ function Play:init()
 end
 
 
+function read_card(str)
+  local res = {}
+  for d in str:gmatch("([^ ]+) ?") do
+    table.insert(res, tonumber(d))
+  end
+  return res
+end
 
 
 
