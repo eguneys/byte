@@ -151,14 +151,23 @@ end
 
 function OSolitaire:drop(orig_data, dest_data)
   local f_index, stack_index = math.floor(orig_data / 100), orig_data % 100
-  local dest_index = dest_data / 100
+  local dest_index, hole_index = math.floor(dest_data / 100), (dest_data - 900) / 10
 
   if f_index == 8 then
+    if dest_index == 9 then
+      return 'no'
+    end
     local stack = self.waste:pop(1)
     self.fs[dest_index]:paste(stack)
     return 'ok'
   else
+
     local stack, oreveal = self.fs[f_index]:cut(stack_index)
+
+    if dest_index == 9 then
+      --self.holes[hole_index]:paste(stack)
+      return 'ok', oreveal
+    end
     self.fs[dest_index]:paste(stack)
     return 'ok', oreveal
   end

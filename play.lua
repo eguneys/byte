@@ -138,6 +138,10 @@ end
 
 function CardStack:hit_target_empty(x, y)
   if #self.cards ~= 0 then return false end
+  return self:hit_target_base(x, y)
+end
+
+function CardStack:hit_target_base(x, y)
   return hit_test_rect(self.pos.x,
   self.pos.y, 30, 40, x, y)
 end
@@ -238,7 +242,7 @@ function Foundation:drag_test_cut_stack(x, y)
   end
 end
 
-function Foundation:drag_test_drop_stack(x, y, stack)
+function Foundation:drag_test_drop_stack(x, y)
 
   if self.upturned:is_empty() and self.downturned:is_empty() then
     return self.downturned:hit_target_empty(x, y)
@@ -322,6 +326,44 @@ end
 function Stock:draw()
   self.visual:draw()
 end
+
+
+
+
+Hole = Object:extend()
+Hole:implement(HasPos)
+function Hole:init(logic, x, y, index)
+  self:init_pos(Vector(x, y))
+  self.cards = CardStack(x, y, 0)
+
+  self.index = index
+  self.dest_data = 900 + self.index * 10
+end
+
+function Hole:in_drop(stack)
+  for _, card in ipairs(stack.cards) do 
+    self.cards:add(card)
+  end
+end
+
+
+function Hole:drag_test_drop_stack(x, y, stack)
+  return self.cards:hit_target_base(x, y)
+end
+
+function Hole:update(dt)
+  self.cards:update(dt)
+end
+
+function Hole:draw(n)
+  self.cards:draw(n)
+end
+
+
+
+
+
+
 
 StillCard = Object:extend()
 StillCard:implement(HasCardWithPos)
@@ -544,6 +586,12 @@ function Solitaire:init(logic)
   self.stock = Stock(logic, 6, 11)
   self.waste = Waste(logic, 6, 57)
 
+  self.holes = {
+    Hole(logic, 33 * 7 + 52, 11 + 42 * 0, 1),
+    Hole(logic, 33 * 7 + 52, 11 + 42 * 1, 2),
+    Hole(logic, 33 * 7 + 52, 11 + 42 * 2, 3),
+    Hole(logic, 33 * 7 + 52, 11 + 42 * 3, 4),
+  }
 
   self.logic = logic
 end
@@ -577,8 +625,15 @@ end
 function Solitaire:drag_stop(x, y)
   if self.ds ~= nil then
 
+    for _, hole in ipairs(self.holes) do
+      if hole:drag_test_drop_stack(x, y) then
+        self.ds:drop_hole(hole)
+        return
+      end
+    end
+
     for _, foun in ipairs(self.foundations) do
-      if foun:drag_test_drop_stack(x, y, self.ds.stack) then
+      if foun:drag_test_drop_stack(x, y) then
         self.ds:drop(foun)
         return
       end
@@ -639,6 +694,11 @@ function Solitaire:update(dt)
     f:update(dt)
   end
 
+  for i, h in ipairs(self.holes) do
+    h:update(dt)
+  end
+
+
   self.stock:update(dt)
   self.waste:update(dt)
 end
@@ -650,6 +710,11 @@ function Solitaire:draw()
    f:draw(1)
   end
 
+  for i, h in ipairs(self.holes) do
+   h:draw(1)
+  end
+
+
   self.stock:draw()
   self.waste:draw()
 
@@ -657,6 +722,12 @@ function Solitaire:draw()
   for i, f in ipairs(self.foundations) do
     f:draw(2)
   end
+
+
+  for i, h in ipairs(self.holes) do
+   h:draw(2)
+  end
+
 
   if self.ds ~= nil then
     self.ds:draw()
@@ -693,6 +764,15 @@ function DragInfoSolitaire:drop(foun)
   self.drop_sent = foun
 end
 
+function DragInfoSolitaire:drop_hole(hole)
+  if self.drop_sent ~= nil then
+    return
+  end
+
+  self.logic:out_drop(self.orig_data, hole.dest_data)
+  self.drop_sent = hole
+end
+
 
 function DragInfoSolitaire:cancel(force)
   if not force and self.drop_sent ~= nil then
@@ -722,7 +802,8 @@ end
 
 UpCard = Object:extend()
 UpCard:implement(Card)
-function UpCard:init(suit, rank)
+function UpCard:init(suit, rank, no_shadow)
+  self.no_shadow = no_shadow
   self.suit = suit
   self.rank = rank
   self.anim = anim8.newAnimation(g34(1, 1), 1)
@@ -743,7 +824,9 @@ function UpCard:draw(x, y)
   x = math.round(x)
   y = math.round(y)
 
-  self.a_shadow:draw(sprites, x + 1, y + 1)
+  if not self.no_shadow then
+    self.a_shadow:draw(sprites, x + 1, y + 1)
+  end
   self.anim:draw(sprites, x, y)
   self.a_suit:draw(sprites, x+22, y+2)
   self.a_rank:draw(sprites, x+2, y+2)

@@ -10,7 +10,8 @@
 - [+] Drop on empty Foundation
 - [+] Drag Waste
 - [+] Drag Cancel Waste
-- [ ] Drop at Holes
+- [+] Drop at Holes
+- [ ] Drag Hole
 - [ ] Can Drag from Foundation
 - [ ] Can Drop at Foundation
 - [ ] Can Drop at Hole
