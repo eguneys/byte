@@ -524,6 +524,23 @@ function Solitaire:drag_stop(x, y)
   end
 end
 
+
+function Solitaire:in_drop(oreveal)
+  if ~self.ds then
+    return self.logic:sync()
+  end
+
+
+
+end
+
+function Solitaire:in_drop_cancel()
+  if ~self.ds then
+    return self.logic:sync()
+  end
+  self.ds:cancel(true)
+end
+
 function Solitaire:deal_stock3(cards)
 
 
@@ -589,13 +606,15 @@ function DragInfoSolitaire:init(logic, stack, decay, target, orig_data)
 end
 
 function DragInfoSolitaire:drop(foun)
-  --foun:drag_drop(self.stack)
+  if self.drop_sent then
+    return
+  end
   self.logic:out_drop(self.orig_data, foun.dest_data)
   self.drop_sent = true
 end
 
 
-function DragInfoSolitaire:cancel()
+function DragInfoSolitaire:cancel(force)
   if self.drop_sent then
     return false
   end
@@ -772,6 +791,11 @@ function SolitaireLogic:update(dt)
       end
 
       self:in_load(fs)
+    elseif cmd == 'drop' then
+      print(args)
+      local ok, oreveal = args:find("^(.*);(.*)$")
+
+      self:in_drop(ok, oreveal)
     else
       print('Unrecognized cmd', cmd)
     end
@@ -793,38 +817,17 @@ function SolitaireLogic:in_load(data)
 end
 
 function SolitaireLogic:in_drop(ok, oreveal)
-  if ok then
+  if ok == 'ok' then
+    self.scene.solitaire:in_drop(oreveal)
     if oreveal ~= nil then
     end
+  else
+    self.scene.solitaire:in_drop_cancel()
   end
 end
 
 function SolitaireLogic:in_cancel()
 end
-
-
-SolitaireServer = Object:extend()
-function SolitaireServer:init()
-  self.messages = {}
-end
-
-function SolitaireServer:get()
-  table.insert(self.messages, 'load 0 1 1;1 3 2 2 2;0;0;0;4 1 2;2 1 2')
-end
-
-function SolitaireServer:send(msg)
-  local cmd, args = msg:match("^(%a*) ?(.*)")
-
-  if cmd == 'drop' then
-    print(args)
-  end
-end
-
-function SolitaireServer:receive()
-  return table.remove(self.messages)
-end
-
-
 
 Play = Object:extend()
 
