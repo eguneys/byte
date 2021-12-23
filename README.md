@@ -8,8 +8,8 @@
 - [+] Drop at Foundation
 - [+] Reveal cards on empty foundations
 - [+] Drop on empty Foundation
-- [ ] Drag Waste
-- [ ] Drag Cancel Waste
+- [+] Drag Waste
+- [+] Drag Cancel Waste
 - [ ] Drop at Holes
 - [ ] Can Drag from Foundation
 - [ ] Can Drop at Foundation

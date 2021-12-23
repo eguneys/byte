@@ -134,17 +134,35 @@ function OSolitaire:init()
     OFoundation(dstack:pop(5), dstack:pop(1)),
     OFoundation(dstack:pop(6), dstack:pop(1))
   }
+
+
+  self.stock = dstack
+  self.waste = OCardStack({})
 end
+
+function OSolitaire:deal()
+  if not self.stock:is_empty() then
+    local res = self.stock:pop(3)
+    self.waste:paste(res)
+    return res
+  end
+end
+
 
 function OSolitaire:drop(orig_data, dest_data)
   local f_index, stack_index = math.floor(orig_data / 100), orig_data % 100
   local dest_index = dest_data / 100
 
-  local stack, oreveal = self.fs[f_index]:cut(stack_index)
-
-  self.fs[dest_index]:paste(stack)
-
-  return 'drop', oreveal
+  if f_index == 8 then
+    local stack = self.waste:pop(1)
+    self.fs[dest_index]:paste(stack)
+    return 'ok'
+  else
+    local stack, oreveal = self.fs[f_index]:cut(stack_index)
+    self.fs[dest_index]:paste(stack)
+    return 'ok', oreveal
+  end
+  return 'no'
 end
 
 function OSolitaire:write()
@@ -173,15 +191,22 @@ end
 function SolitaireServer:send(msg)
   local cmd, args = msg:match("^(%a*) ?(.*)$")
 
-  if cmd == 'drop' then
+  if cmd == 'deal' then
+    local owaste = self.solitaire:deal()
+    if owaste == nil then
+      self:message('deal', 'no')
+    else
+      self:message('deal', OCardStack(owaste):write())
+    end
+  elseif cmd == 'drop' then
 
     local _, _, orig_data, dest_data = args:find("(%d*) (%d*)")
 
     local res, oreveal = self.solitaire:drop(orig_data, dest_data)
 
-    if res == nil then
-      self:message('drop', 'cancel')
-    elseif res == 'drop' then
+    if res == 'no' then
+      self:message('drop', 'no')
+    elseif res == 'ok' then
       self:message('drop', 'ok' .. (oreveal and ';' .. oreveal:write() or ''))
     end
   end

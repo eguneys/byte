@@ -79,7 +79,6 @@ end
 function hit_test_rect(x, y, w, h, ax, ay)
 return x < ax and x + w > ax and
   y < ay and y + h > ay
-
 end
 
 
@@ -101,6 +100,13 @@ end
 
 function CardStack:remove()
   return table.remove(self.cards)
+end
+
+function CardStack:set(cards)
+  for i=1,3 do
+    self:remove()
+  end
+  self:paste(cards)
 end
 
 function CardStack:smooth_move(x, y)
@@ -136,8 +142,8 @@ function CardStack:hit_target_empty(x, y)
   self.pos.y, 30, 40, x, y)
 end
 
-function CardStack:paste(stack)
-  for _, card in ipairs(stack.cards) do
+function CardStack:paste(cards)
+  for _, card in ipairs(cards) do
     self:add(card)
   end
 end
@@ -210,7 +216,7 @@ function Foundation:reveal(card)
 end
 
 function Foundation:drag_cancel(stack)
-  self.upturned:paste(stack) 
+  self.upturned:paste(stack.cards) 
 end
 
 function Foundation:in_drop(stack)
@@ -255,6 +261,67 @@ function Foundation:draw(pass)
 end
 
 
+Waste = Object:extend()
+Waste:implement(HasPos)
+function Waste:init(logic, x, y)
+  self.logic = logic
+  self:init_pos(Vector(x, y))
+  self.cards = CardStack(x, y) 
+  self.orig_data = 800
+end
+
+function Waste:drag_cancel(stack)
+  self.cards:paste(stack.cards) 
+end
+
+function Waste:drag_test_cut_stack(x, y)
+  local hit_index, hit_decay = self.cards:hit_target_index(x, y)
+
+  if hit_index == #self.cards.cards then
+    return DragInfoSolitaire(self.logic,
+    self.cards:cut(hit_index), hit_decay,
+    self, self.orig_data)
+  end
+end
+
+
+function Waste:set(card)
+  self.cards:set(card)
+end
+
+function Waste:update(dt)
+  self.cards:update(dt)
+end
+
+function Waste:draw()
+  self.cards:draw()
+end
+
+
+
+Stock = Object:extend()
+Stock:implement(HasPos)
+function Stock:init(logic, x, y)
+  self:init_pos(Vector(x, y))
+  self.visual = StillCard(BackCard(), self.pos)
+  self.logic = logic
+end
+
+function Stock:click_test(x, y)
+  return hit_test_rect(self.pos.x, self.pos.y, 30, 40, x, y)
+end
+
+function Stock:ui_click()
+  self.logic:out_deal()
+end
+
+function Stock:update(dt)
+  self.visual:update(dt)
+end
+
+function Stock:draw()
+  self.visual:draw()
+end
 
 StillCard = Object:extend()
 StillCard:implement(HasCardWithPos)
@@ -474,8 +541,8 @@ function Solitaire:init(logic)
     Foundation(logic, 33 * 6 + 50, 11, 7),
   }
 
-  self.stock = CardStack(8, 8, 0.1)
-  self.waste = CardStack(8, 40 + 8 + 8)
+  self.stock = Stock(logic, 6, 11)
+  self.waste = Waste(logic, 6, 57)
 
 
   self.logic = logic
@@ -483,7 +550,20 @@ end
 
 function Solitaire:drag_start(x, y)
 
+  if self.stock:click_test(x, y) then
+    self.stock:ui_click()
+    return
+  end
+
+
   if self.ds ~= nil then return end
+
+
+  local ds = self.waste:drag_test_cut_stack(x, y)
+  if ds then
+    self.ds = ds
+    return
+  end
 
   for _, foun in ipairs(self.foundations) do
     local ds = foun:drag_test_cut_stack(x, y)
@@ -510,6 +590,13 @@ function Solitaire:drag_stop(x, y)
   end
 end
 
+function Solitaire:in_deal(waste)
+
+  self.waste:set(table_map(waste, function (oc) 
+    return RevealCard(UpCard(oc[1], oc[2]), self.stock.pos)
+  end))
+
+end
 
 function Solitaire:in_drop(oreveal)
   if self.ds == nil then
@@ -554,8 +641,6 @@ function Solitaire:update(dt)
 
   self.stock:update(dt)
   self.waste:update(dt)
-
-  local im = Mouse:btn()
 end
 
 function Solitaire:draw()
@@ -594,7 +679,7 @@ end
 
 function DragInfoSolitaire:in_drop(oreveal)
   if oreveal ~= nil then
-    self.target:reveal(UpCard(oreveal[1], oreveal[2]))
+    self.target:reveal(UpCard(oreveal[1][1], oreveal[1][2]))
   end
   self.drop_sent:in_drop(self.stack)
   self.drop_sent = nil
@@ -610,7 +695,7 @@ end
 
 
 function DragInfoSolitaire:cancel(force)
-  if self.drop_sent ~= nil then
+  if not force and self.drop_sent ~= nil then
     return false
   end
   self.target:drag_cancel(self.stack)
@@ -711,7 +796,6 @@ function MouseDraw:update(dt)
     self.anim:gotoFrame(1)
   end
 
-
   if im == 2 then
     self:drag_start()
   elseif im == -1 then
@@ -779,25 +863,24 @@ function SolitaireLogic:update(dt)
     local cmd, args = data:match("^(%a*) ?(.*)")
     print(cmd, args)
 
-    if cmd == 'load' then
-
-
-      local fs = {}
-
-      -- 0 1 1;1 3 2 2 2;0;0;0;4 1 2;2 1 2
-      for _ff in args:gmatch("([^;]+);?") do
-        table.insert(fs, read_card(_ff))
+    if cmd == 'deal' then
+      if args == 'no' then
+        -- TODO in deal no
+        print('in deal no')
+      else
+        self:in_deal(read_stack(args))
       end
+    elseif cmd == 'load' then
 
-      self:in_load(fs)
+      self:in_load(read_data(args))
     elseif cmd == 'drop' then
-      if args == 'cancel' then
+      if args == 'no' then
         self:in_drop_cancel()
       else 
         -- https://stackoverflow.com/questions/70458771/capture-word-a-or-b-and-part-of-optional-extra-arguments
         local _, _, ok, oreveal = args:find("^(ok%f[%A]);?(.+)$")
 
-        oreveal = oreveal ~= nil and read_card(oreveal) or nil
+        oreveal = oreveal ~= nil and read_stack(oreveal) or nil
 
         self:in_drop(oreveal)
       end
@@ -817,6 +900,14 @@ function SolitaireLogic:out_drop(orig, dest)
   self.server:send(string.format('drop %02d %02d', orig, dest))
 end
 
+function SolitaireLogic:out_deal()
+  self.server:send('deal')
+end
+
+function SolitaireLogic:in_deal(waste)
+  self.scene.solitaire:in_deal(waste)
+end
+
 function SolitaireLogic:in_load(data)
   self.scene = LoadSolitaire(self, data)
 end
@@ -832,6 +923,41 @@ end
 function SolitaireLogic:in_cancel()
 end
 
+
+function read_data(str)
+  local fs = {}
+
+  -- 0 1 1;1 3 2 2 2;0;0;0;4 1 2;2 1 2
+  for _ff in str:gmatch("([^;]+);?") do
+    table.insert(fs, read_numbers(_ff))
+  end
+
+  return fs
+end
+
+function read_stack(str)
+  local ns = read_numbers(str)
+  local res = {}
+  for i=1,#ns,2 do
+
+    table.insert(res, {ns[i], ns[i+1]})
+  end
+  return res
+end
+
+function read_numbers(str)
+  local res = {}
+  for d in str:gmatch("([^ ]+) ?") do
+    table.insert(res, tonumber(d))
+  end
+  return res
+end
+
+
+
+
+
+
 Play = Object:extend()
 
 dbg = ''
@@ -844,16 +970,6 @@ function Play:init()
   local server = SolitaireServer()
   self.logic = SolitaireLogic(server)
 end
-
-function read_card(str)
-  local res = {}
-  for d in str:gmatch("([^ ]+) ?") do
-    table.insert(res, tonumber(d))
-  end
-  return res
-end
-
-
 
 function Play:update(dt)
 
