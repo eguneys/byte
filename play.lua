@@ -142,14 +142,19 @@ function CardStack:hit_target_empty(x, y)
 end
 
 function CardStack:hit_target_base(x, y)
+  local stack_decay = Vector(self.pos.x - x, self.pos.y - y)
   return hit_test_rect(self.pos.x,
-  self.pos.y, 30, 40, x, y)
+  self.pos.y, 30, 40, x, y), stack_decay
 end
 
 function CardStack:paste(cards)
   for _, card in ipairs(cards) do
     self:add(card)
   end
+end
+
+function CardStack:pop_cut()
+  return self:cut(#self.cards)
 end
 
 function CardStack:cut(index)
@@ -333,11 +338,18 @@ end
 Hole = Object:extend()
 Hole:implement(HasPos)
 function Hole:init(logic, x, y, index)
+  self.logic = logic
   self:init_pos(Vector(x, y))
   self.cards = CardStack(x, y, 0)
 
   self.index = index
   self.dest_data = 900 + self.index * 10
+  self.orig_data = self.dest_data
+end
+
+
+function Hole:drag_cancel(stack)
+  self.cards:paste(stack.cards)
 end
 
 function Hole:in_drop(stack)
@@ -349,6 +361,18 @@ end
 
 function Hole:drag_test_drop_stack(x, y, stack)
   return self.cards:hit_target_base(x, y)
+end
+
+function Hole:drag_test_cut_stack(x, y)
+  if self.cards:is_empty() then
+    return nil
+  end
+  local hit_index, hit_decay = self.cards:hit_target_base(x, y)
+
+  if hit_index then
+    return DragInfoSolitaire(self.logic, self.cards:pop_cut(), hit_decay, self, self.orig_data)
+  end
+
 end
 
 function Hole:update(dt)
@@ -494,15 +518,6 @@ function ShuffleUpAndSolitaire:init()
       self.solitaire.stock:add(cardpos)
     end)
   end
-
-  self.t:after(2, function()
-    self.solitaire:deal_stock3 {
-      UpCard(1, 1),
-      UpCard(2, 2),
-      UpCard(3, 3)
-    } 
-  end)
-
 end
 
 
@@ -620,6 +635,14 @@ function Solitaire:drag_start(x, y)
       return
     end
   end
+
+  for _, hole in ipairs(self.holes) do
+    local ds = hole:drag_test_cut_stack(x, y)
+    if ds then
+      self.ds = ds
+      return
+    end
+  end
 end
 
 function Solitaire:drag_stop(x, y)
@@ -668,19 +691,6 @@ function Solitaire:in_drop_cancel()
   end
   self.ds:cancel(true)
   self.ds = nil
-end
-
-function Solitaire:deal_stock3(cards)
-
-
-  for i=1,3 do
-    local cardpos = self.stock:remove()
-
-
-    self.waste:add(RevealCard(cards[i], cardpos.pos))
-
-  end
-
 end
 
 function Solitaire:update(dt)

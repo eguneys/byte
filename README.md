@@ -11,7 +11,11 @@
 - [+] Drag Waste
 - [+] Drag Cancel Waste
 - [+] Drop at Holes
-- [ ] Drag Hole
-- [ ] Can Drag from Foundation
+- [+] Drag Hole
+- [ ] Undo Drop F to F
+- [ ] Undo Drop F to H
+- [ ] Undo Drop W to F
 - [ ] Can Drop at Foundation
 - [ ] Can Drop at Hole
+- [ ] Can Drag from Foundation
+- [ ] Cant Drop more than 20 cards

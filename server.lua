@@ -92,6 +92,22 @@ for _, suit in ipairs(suits) do
   end
 end
 
+function alternate_color(a, b)
+  return (a + b) % 2 == 1
+end
+
+function one_higher_rank(a, b)
+  return a + 1 == b
+end
+
+function top_rank(a)
+  return a == 13
+end
+
+function bottom_rank(a)
+  return a == 1
+end
+
 OFoundation = Object:extend()
 function OFoundation:init(downturned, upturned)
   self.downturned = OCardStack(downturned)
@@ -111,6 +127,10 @@ function OFoundation:cut(n)
   return stack
 end
 
+function OFoundation:uncut(stack, hidetop)
+
+end
+
 function OFoundation:paste(stack)
   self.upturned:paste(stack)
 end
@@ -119,7 +139,10 @@ function OFoundation:write()
   return #self.downturned.cards .. " " .. self.upturned:write()
 end
 
-
+-- 100 700 foundation indexes
+-- 101-113 stack indexes
+-- 800 waste index
+-- 910 920 930 940 hole indexes
 OSolitaire = Object:extend()
 function OSolitaire:init()
 
@@ -153,7 +176,9 @@ function OSolitaire:drop(orig_data, dest_data)
   local f_index, stack_index = math.floor(orig_data / 100), orig_data % 100
   local dest_index, hole_index = math.floor(dest_data / 100), (dest_data - 900) / 10
 
-  if f_index == 8 then
+  if f_index == 9 then
+    return 'no'
+  elseif f_index == 8 then
     if dest_index == 9 then
       return 'no'
     end
@@ -166,9 +191,9 @@ function OSolitaire:drop(orig_data, dest_data)
 
     if dest_index == 9 then
       --self.holes[hole_index]:paste(stack)
-      return 'ok', oreveal
+    else
+      self.fs[dest_index]:paste(stack)
     end
-    self.fs[dest_index]:paste(stack)
     return 'ok', oreveal
   end
   return 'no'
@@ -210,14 +235,10 @@ function SolitaireServer:send(msg)
   elseif cmd == 'drop' then
 
     local _, _, orig_data, dest_data = args:find("(%d*) (%d*)")
-
+    
     local res, oreveal = self.solitaire:drop(orig_data, dest_data)
 
-    if res == 'no' then
-      self:message('drop', 'no')
-    elseif res == 'ok' then
-      self:message('drop', 'ok' .. (oreveal and ';' .. oreveal:write() or ''))
-    end
+    self:message('drop', res .. (oreveal and ';' .. oreveal:write() or ''))
   end
 end
 
