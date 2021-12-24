@@ -24,6 +24,34 @@ function table_slice(src, from, to)
   return res
 end
 
+function table_splice(src, from, to)
+  from = from or 0
+  to = to or #src
+
+  local res = {}
+  for i=to,from,-1 do
+    table.insert(res, table.remove(src, i))
+  end
+  return res
+end
+
+function table_append(a, b)
+  for _, v in ipairs(b) do
+    table.insert(a, v)
+  end
+  return a
+end
+
+function table_reverse(t)
+	local len = #t
+	for i = len - 1, 1, -1 do
+		t[len] = table.remove(t, i)
+	end
+  return t
+end
+
+
+
 function table_write(table, sep)
   sep = sep or ' '
   local res = table[1] 
@@ -48,33 +76,26 @@ function OCardStack:init(cards)
   self.cards = table_slice(cards)
 end
 
-function OCardStack:pop(n)
-  local res = {}
-  for i=1,n do
-    table.insert(res, table.remove(self.cards))
-  end
-  return res
-end
-
 function OCardStack:is_empty()
   return #self.cards == 0
 end
 
 function OCardStack:push(card)
-  table.insert(self.cards, card)
+  return table.insert(self.cards, card)
 end
 
-function OCardStack:cut(index)
-  local res = table_slice(self.cards, index, #self.cards)
-  self.cards = table_slice(self.cards, 1, index - 1)
-  return res
+function OCardStack:append(stack)
+  table_append(self.cards, stack)
 end
 
-function OCardStack:paste(cards)
-  for _, card in ipairs(cards) do
-    table.insert(self.cards, card)
-  end
+function OCardStack:pop(n)
+  return table_reverse(table_splice(self.cards, #self.cards - n + 1, #self.cards))
 end
+
+function OCardStack:cut(n)
+  return self:pop(n)
+end
+
 
 function OCardStack:write()
   return table.concat(
@@ -127,13 +148,22 @@ function OFoundation:cut(n)
   return stack
 end
 
-function OFoundation:uncut(stack, hidetop)
-
-end
-
 function OFoundation:paste(stack)
-  self.upturned:paste(stack)
+  self.upturned:append(stack)
 end
+
+function OFoundation:uncut(stack, has_reveal)
+  if has_reveal then
+    local hide = self.upturned:pop(1)[1]
+    self.downturned:push(hide)
+  end
+  self.upturned:append(stack)
+end
+
+function OFoundation:unpaste(nb_cards)
+  return self.upturned:unpaste(nb_cards)
+end
+
 
 function OFoundation:write()
   return #self.downturned.cards .. " " .. self.upturned:write()
@@ -144,9 +174,9 @@ end
 -- 800 waste index
 -- 910 920 930 940 hole indexes
 OSolitaire = Object:extend()
-function OSolitaire:init()
+function OSolitaire:init(_deck)
 
-  local dstack = OCardStack(deck)
+  local dstack = OCardStack(_deck)
 
   self.fs = {
     OFoundation(dstack:pop(0), dstack:pop(1)),
@@ -166,11 +196,21 @@ end
 function OSolitaire:deal()
   if not self.stock:is_empty() then
     local res = self.stock:pop(3)
-    self.waste:paste(res)
+    self.waste:append(res)
     return res
   end
 end
 
+function OSolitaire:_undrop(orig_data, dest_data, has_reveal)
+  local f_index, stack_index = math.floor(orig_data / 100), orig_data % 100
+  local dest_index, hole_index = math.floor(dest_data / 100), (dest_data - 900) / 10
+
+  
+  local stack = self.fs[dest_index]:cut(stack_index)
+
+  self.fs[f_index]:uncut(stack)
+
+end
 
 function OSolitaire:drop(orig_data, dest_data)
   local f_index, stack_index = math.floor(orig_data / 100), orig_data % 100
@@ -208,7 +248,7 @@ SolitaireServer = Object:extend()
 function SolitaireServer:init()
 
 
-  self.solitaire = OSolitaire()
+  self.solitaire = OSolitaire(deck)
   print(self.solitaire:write())
 
   self.messages = {}

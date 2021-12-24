@@ -125,7 +125,7 @@ function CardStack:hit_target_index(x, y)
   for i, card in ipairs(self.cards) do
     local height = i == #self.cards and 40 or 8
     if card:hit(30, height, x, y) then
-      return i, card:decay(x, y)
+      return #self.cards - i + 1, card:decay(x, y)
     end
   end
 end
@@ -153,22 +153,14 @@ function CardStack:paste(cards)
   end
 end
 
-function CardStack:pop_cut()
-  return self:cut(#self.cards)
-end
-
-function CardStack:cut(index)
-  -- TODO
+function CardStack:cut(back_index)
+  local index = #self.cards - back_index + 1
   local pos = self.cards[index].pos
   local res = CardStack(pos.x, pos.y)
-  local tmp = {}
-  for i=#self.cards, index, -1 do
-    local card = table.remove(self.cards, i)
-    table.insert(tmp, card)
-  end
-  for i=#tmp, 1, -1 do
-    res:add(tmp[i])
-  end
+
+  local tmp = table_splice(self.cards, index, #self.cards)
+  table_reverse(tmp)
+  res:paste(tmp)
   return res
 end
 
@@ -286,7 +278,7 @@ end
 function Waste:drag_test_cut_stack(x, y)
   local hit_index, hit_decay = self.cards:hit_target_index(x, y)
 
-  if hit_index == #self.cards.cards then
+  if hit_index == 1 then
     return DragInfoSolitaire(self.logic,
     self.cards:cut(hit_index), hit_decay,
     self, self.orig_data)
@@ -370,7 +362,7 @@ function Hole:drag_test_cut_stack(x, y)
   local hit_index, hit_decay = self.cards:hit_target_base(x, y)
 
   if hit_index then
-    return DragInfoSolitaire(self.logic, self.cards:pop_cut(), hit_decay, self, self.orig_data)
+    return DragInfoSolitaire(self.logic, self.cards:cut(1), hit_decay, self, self.orig_data)
   end
 
 end
