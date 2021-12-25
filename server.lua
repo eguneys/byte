@@ -191,6 +191,26 @@ function OSolitaire:init(_deck)
 
   self.stock = dstack
   self.waste = OCardStack({})
+
+  self.undo_stack = {}
+end
+
+function OSolitaire:undo()
+
+  local undo = table.remove(self.undo_stack)
+
+  if undo == nil then
+    return 'no'
+  end
+
+  local orig_data, dest_data, oreveal = unpack(undo)
+
+  self:_undrop(orig_data, dest_data, oreveal ~= nil)
+
+  local reveal_data = oreveal ~= nil and 'reveal' or ''
+
+  return 'ok' .. ' ' .. orig_data .. ' ' .. dest_data .. ' ' .. reveal_data
+
 end
 
 function OSolitaire:deal()
@@ -205,12 +225,12 @@ function OSolitaire:_undrop(orig_data, dest_data, has_reveal)
   local f_index, stack_index = math.floor(orig_data / 100), orig_data % 100
   local dest_index, hole_index = math.floor(dest_data / 100), (dest_data - 900) / 10
 
-  
   local stack = self.fs[dest_index]:cut(stack_index)
 
-  self.fs[f_index]:uncut(stack)
+  self.fs[f_index]:uncut(stack, has_reveal)
 
 end
+
 
 function OSolitaire:drop(orig_data, dest_data)
   local f_index, stack_index = math.floor(orig_data / 100), orig_data % 100
@@ -234,6 +254,8 @@ function OSolitaire:drop(orig_data, dest_data)
     else
       self.fs[dest_index]:paste(stack)
     end
+
+    table.insert(self.undo_stack, { orig_data, dest_data, oreveal })
     return 'ok', oreveal
   end
   return 'no'
@@ -264,8 +286,13 @@ end
 
 function SolitaireServer:send(msg)
   local cmd, args = msg:match("^(%a*) ?(.*)$")
+    
+  if cmd == 'undo' then
 
-  if cmd == 'deal' then
+    local res, undo_data = self.solitaire:undo()
+    self:message('undo', res, undo_data)
+
+  elseif cmd == 'deal' then
     local owaste = self.solitaire:deal()
     if owaste == nil then
       self:message('deal', 'no')

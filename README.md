@@ -1,4 +1,5 @@
 - [ ] Mouse Cursor look like when, idle, clicked on empty, hover/click on action, drag card
+- [ ] highlight hover , inactive, click
 
 
 ## TODO
@@ -12,7 +13,7 @@
 - [+] Drag Cancel Waste
 - [+] Drop at Holes
 - [+] Drag Hole
-- [ ] Undo Drop F to F
+- [+] Undo Drop F to F
 - [ ] Undo Drop F to H
 - [ ] Undo Drop W to F
 - [ ] Can Drop at Foundation

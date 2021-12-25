@@ -208,6 +208,21 @@ function Foundation:add_upturned(cardpos)
   self.upturned:add(cardpos)
 end
 
+
+function Foundation:remove_stack(nb)
+  return self.upturned:cut(nb)
+end
+
+function Foundation:add_stack(stack, hidetop)
+  if hidetop then
+    local card = self.upturned:remove()
+    self.downturned:add(StillCard(BackCard(), card.pos))
+    local target_pos = self.downturned:top_target_pos()
+    self.upturned:smooth_move(target_pos.x, target_pos.y)
+  end
+  self.upturned:paste(stack.cards)
+end
+
 function Foundation:reveal(card)
   local reveal_at_pos = self.downturned:remove().pos
   local target_pos = self.downturned:top_target_pos()
@@ -312,8 +327,11 @@ function Stock:click_test(x, y)
   return hit_test_rect(self.pos.x, self.pos.y, 30, 40, x, y)
 end
 
-function Stock:ui_click()
-  self.logic:out_deal()
+function Stock:maybe_click(x, y)
+  if self:click_test(x, y) then
+    self.logic:out_deal()
+    return true
+  end
 end
 
 function Stock:update(dt)
@@ -601,14 +619,21 @@ function Solitaire:init(logic)
   }
 
   self.logic = logic
+
+
+  self.undo = Undo(logic, 6, 160)
 end
 
 function Solitaire:drag_start(x, y)
 
-  if self.stock:click_test(x, y) then
-    self.stock:ui_click()
+  if self.stock:maybe_click(x, y) then
     return
   end
+
+  if self.undo:maybe_click(x, y) then
+    return
+  end
+
 
 
   if self.ds ~= nil then return end
@@ -660,6 +685,16 @@ function Solitaire:drag_stop(x, y)
   end
 end
 
+function Solitaire:in_undo(orig_data, dest_data, has_reveal)
+  local f_index, stack_index = math.floor(orig_data / 100), orig_data % 100
+  local dest_index, hole_index = math.floor(dest_data / 100), (dest_data - 900) / 10
+
+  local stack = self.foundations[dest_index]:remove_stack(stack_index)
+
+  self.foundations[f_index]:add_stack(stack, has_reveal)
+
+end
+
 function Solitaire:in_deal(waste)
 
   self.waste:set(table_map(waste, function (oc) 
@@ -703,6 +738,9 @@ function Solitaire:update(dt)
 
   self.stock:update(dt)
   self.waste:update(dt)
+
+
+  self.undo:update(dt)
 end
 
 function Solitaire:draw()
@@ -735,6 +773,8 @@ function Solitaire:draw()
     self.ds:draw()
   end
 
+
+  self.undo:draw()
 
 end
 
@@ -948,13 +988,26 @@ function SolitaireLogic:update(dt)
     local cmd, args = data:match("^(%a*) ?(.*)")
     print(cmd, args)
 
-    if cmd == 'deal' then
+    if cmd == 'undo' then
+      if args == 'no' then
+        print('undo no')
+        return
+      end
+
+      local _, _, ok, rest = args:find("^(ok%f[%A]);?(.+)$")
+
+      local undo_data = read_spaces(rest)
+
+      local orig_data, dest_data, has_reveal = unpack(undo_data)
+
+      self:in_undo(orig_data, dest_data, has_reveal == 'reveal')
+    elseif cmd == 'deal' then
       if args == 'no' then
         -- TODO in deal no
         print('in deal no')
-      else
-        self:in_deal(read_stack(args))
+        return
       end
+        self:in_deal(read_stack(args))
     elseif cmd == 'load' then
 
       self:in_load(read_data(args))
@@ -985,8 +1038,16 @@ function SolitaireLogic:out_drop(orig, dest)
   self.server:send(string.format('drop %02d %02d', orig, dest))
 end
 
+function SolitaireLogic:out_undo()
+  self.server:send('undo')
+end
+
 function SolitaireLogic:out_deal()
   self.server:send('deal')
+end
+
+function SolitaireLogic:in_undo(orig_data, dest_data, has_reveal)
+  self.scene.solitaire:in_undo(orig_data, dest_data, has_reveal)
 end
 
 function SolitaireLogic:in_deal(waste)
@@ -1039,8 +1100,50 @@ function read_numbers(str)
 end
 
 
+function read_spaces(str)
+  local res = {}
+  for d in str:gmatch("([^ ]+) ?") do
+    table.insert(res, d)
+  end
+  return res
+end
 
 
+
+Undo = Object:extend()
+Undo:implement(HasPos)
+function Undo:init(logic, x, y)
+  self.logic = logic
+  self:init_pos(Vector(x, y))
+
+  self.anim = anim8.newAnimation(g1212(1, 1), 1)
+  self.shadow = anim8.newAnimation(g1212(2, 1), 1)
+end
+
+
+function Undo:click_test(x, y)
+  return hit_test_rect(self.pos.x -2, self.pos.y - 2, 16, 16, x, y)
+end
+
+function Undo:maybe_click(x, y)
+  if self:click_test(x, y) then
+    self.logic:out_undo()
+    return true
+  end
+end
+
+
+
+function Undo:update(dt)
+  if Input:btn('u') == 2 then
+    self.logic:out_undo()
+  end
+end
+
+function Undo:draw()
+  self.shadow:draw(sprites, self.pos.x + 1, self.pos.y + 1)
+  self.anim:draw(sprites, self.pos.x, self.pos.y)
+end
 
 
 Play = Object:extend()
