@@ -355,17 +355,24 @@ function Hole:init(logic, x, y, index)
   self.index = index
   self.dest_data = 900 + self.index * 10
   self.orig_data = self.dest_data
+
+  self.suit = index
 end
 
+function Hole:add_cards(cards)
+  table_map(cards, function(card)
+    card.card.no_shadow = true
+    return card
+  end)
+  self.cards:paste(cards)
+end
 
 function Hole:drag_cancel(stack)
-  self.cards:paste(stack.cards)
+  self:add_cards(stack.cards)
 end
 
 function Hole:in_drop(stack)
-  for _, card in ipairs(stack.cards) do 
-    self.cards:add(card)
-  end
+  self:add_cards(stack.cards)
 end
 
 
@@ -560,7 +567,8 @@ function LoadSolitaire:init(logic, data)
   self.solitaire = Solitaire(logic)
   self.md = MouseDraw(self.solitaire)
 
-  for fi, fs in ipairs(data) do
+  for fi=1,7 do
+    local fs = data[fi]
     local foun = self.solitaire.foundations[fi]
     local hidden = fs[1]
 
@@ -574,7 +582,20 @@ function LoadSolitaire:init(logic, data)
       local suit, rank = fs[i], fs[i+1]
       foun:add_upturned(StillCard(UpCard(suit, rank), foun.downturned.pos))
     end
+  end
 
+
+
+  for hi=8,11 do
+    local hs = data[hi][1]
+    local hole = self.solitaire.holes[hi-7]
+
+    local cards = {}
+    for rank=1,hs do
+      table.insert(cards, StillCard(UpCard(hole.suit, rank), Vector(hole.pos.x, hole.pos.y - 8)))
+    end
+
+    hole:add_cards(cards)
   end
 
 

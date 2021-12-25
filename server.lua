@@ -169,6 +169,21 @@ function OFoundation:write()
   return #self.downturned.cards .. " " .. self.upturned:write()
 end
 
+
+OHole = Object:extend()
+function OHole:init(cards)
+  self.stack = OCardStack(cards)
+end
+
+function OHole:paste(stack)
+  self.stack:append(stack)
+end
+
+function OHole:write()
+  return #self.stack.cards
+end
+
+
 -- 100 700 foundation indexes
 -- 101-113 stack indexes
 -- 800 waste index
@@ -191,6 +206,14 @@ function OSolitaire:init(_deck)
 
   self.stock = dstack
   self.waste = OCardStack({})
+
+
+  self.holes = {
+    OHole({}),
+    OHole({}),
+    OHole({}),
+    OHole({})
+  }
 
   self.undo_stack = {}
 end
@@ -250,7 +273,7 @@ function OSolitaire:drop(orig_data, dest_data)
     local stack, oreveal = self.fs[f_index]:cut(stack_index)
 
     if dest_index == 9 then
-      --self.holes[hole_index]:paste(stack)
+      self.holes[hole_index]:paste(stack)
     else
       self.fs[dest_index]:paste(stack)
     end
@@ -263,7 +286,9 @@ end
 
 function OSolitaire:write()
   return table.concat(
-  table_map(self.fs, fn_write), ';')
+  table_map(self.fs, fn_write), ';') .. ';' ..
+  table.concat(
+  table_map(self.holes, fn_write), ';')
 end
 
 SolitaireServer = Object:extend()
