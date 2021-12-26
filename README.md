@@ -20,8 +20,16 @@
 - [ ] Can Drop at Foundation
 - [ ] Can Drop at Hole
 - [ ] Can Drag from Foundation
-- [ ] Drop H to F and Undo
+- [ ] Drop H to F
+- [ ] Undo H to F
 
-- [ ] Action text
+- [ ] Hole to Foundation shadow back
+
+- [ ] Suit art on front facing cards
+- [ ] Suit art on hole background
+- [ ] Action text with count
+- [ ] No action Text
 - [ ] reveal action
 - [ ] Waste Stock movement
+
+

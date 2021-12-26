@@ -1038,7 +1038,7 @@ end
 function ActionText:draw()
   local off = 16 * self.i
   local x, y = math.round(-8 + off + self.pos.x),
-  math.round(self.pos.y)
+  math.round(self.pos.y - 8)
   local w, h = math.round(17+16 - 8 * self.i), 7 + 2
 
   graphics.rectangle(x-8, y-1, w, h, 1, 1, colors.white)
