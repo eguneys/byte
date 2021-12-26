@@ -367,6 +367,10 @@ function Hole:add_cards(cards)
   self.cards:paste(cards)
 end
 
+function Hole:remove_stack(nb)
+  return self.cards:cut(nb)
+end
+
 function Hole:drag_cancel(stack)
   self:add_cards(stack.cards)
 end
@@ -710,7 +714,13 @@ function Solitaire:in_undo(orig_data, dest_data, has_reveal)
   local f_index, stack_index = math.floor(orig_data / 100), orig_data % 100
   local dest_index, hole_index = math.floor(dest_data / 100), (dest_data - 900) / 10
 
-  local stack = self.foundations[dest_index]:remove_stack(stack_index)
+  local stack
+
+  if dest_index == 9 then
+    stack = self.holes[hole_index]:remove_stack(stack_index)
+  else
+    stack = self.foundations[dest_index]:remove_stack(stack_index)
+  end
 
   self.foundations[f_index]:add_stack(stack, has_reveal)
 

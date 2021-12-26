@@ -14,7 +14,8 @@
 - [+] Drop at Holes
 - [+] Drag Hole
 - [+] Undo Drop F to F
-- [ ] Undo Drop F to H
+- [+] Undo Drop F to H
+- [ ] Undo Drop H to F
 - [ ] Undo Drop W to F
 - [ ] Can Drop at Foundation
 - [ ] Can Drop at Hole

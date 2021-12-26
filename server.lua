@@ -175,6 +175,10 @@ function OHole:init(cards)
   self.stack = OCardStack(cards)
 end
 
+function OHole:cut(nb)
+  return self.stack:cut(nb)
+end
+
 function OHole:paste(stack)
   self.stack:append(stack)
 end
@@ -248,7 +252,13 @@ function OSolitaire:_undrop(orig_data, dest_data, has_reveal)
   local f_index, stack_index = math.floor(orig_data / 100), orig_data % 100
   local dest_index, hole_index = math.floor(dest_data / 100), (dest_data - 900) / 10
 
-  local stack = self.fs[dest_index]:cut(stack_index)
+  local stack
+
+  if dest_index == 9 then
+    stack = self.holes[hole_index]:cut(stack_index)
+  else
+    stack = self.fs[dest_index]:cut(stack_index)
+  end
 
   self.fs[f_index]:uncut(stack, has_reveal)
 
