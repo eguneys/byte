@@ -199,6 +199,10 @@ function Foundation:init(solitaire, x, y, index)
   self.dest_data = self.index * 100
 end
 
+function Foundation:is_empty()
+  return self.upturned:is_empty() and self.downturned:is_empty()
+end
+
 function Foundation:add_hidden(cardpos)
   self.downturned:add(cardpos)
   local target_pos = self.downturned:top_target_pos()
@@ -853,11 +857,19 @@ function DragInfoSolitaire:drop_effect(orig_data, dest_data)
   end
 
   ActionText(self.solitaire.effects, x, y, text)
+
+  if self.target:is_empty() then
+    ActionText2(self.solitaire.effects,
+    self.target.pos.x, self.target.pos.y, a2_empty)
+  end
 end
 
 function DragInfoSolitaire:in_drop(oreveal)
   if oreveal ~= nil then
     self.target:reveal(UpCard(oreveal[1][1], oreveal[1][2]))
+
+    local x, y = self.target.pos.x, self.target.pos.y
+    ActionText2(self.solitaire.effects, x, y, a2_reveal)
   end
 
   self:drop_effect(self.orig_data, self.drop_sent.dest_data)
@@ -1042,11 +1054,46 @@ function ActionText:draw()
   local w, h = math.round(17+16 - 8 * self.i), 7 + 2
 
   graphics.rectangle(x-8, y-1, w, h, 1, 1, colors.white)
-  self.anim:draw(sprites, x, y)
+  self.anim:draw(sprites, -4 + x + math.round(off * 0.4), y)
 end
 
 
+a2_reveal = 1
+a2_empty = 2
 
+ActionText2 = Object:extend()
+ActionText2:implement(HasPos)
+function ActionText2:init(group, x, y, text_index)
+  self:init_pos(Vector(x, y))
+  self.group = group
+  table.insert(self.group, self)
+
+  self.anim = anim8.newAnimation(g267('1-2', 1), 1)
+  self.anim:gotoFrame(text_index)
+
+
+
+  self.t = Trigger()
+
+  self.i = 0
+  self.t:tween(1, self, { i=1 }, math.sine_out, function()
+    table_remove_element(self.group, self)
+  end)
+end
+
+function ActionText2:update(dt)
+  self.t:update(dt)
+end
+
+function ActionText2:draw()
+  local off = 16 * self.i
+  local x, y = math.round(-8 + off + self.pos.x),
+  math.round(self.pos.y - 8)
+  local w, h = math.round(26+16 - 8 * self.i), 7 + 2
+
+  graphics.rectangle(x-8, y-1, w, h, 1, 1, colors.white)
+  self.anim:draw(sprites, -4 + x + math.round(off * 0.4), y)
+end
 
 
 
