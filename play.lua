@@ -730,6 +730,7 @@ function Solitaire:in_undo(orig_data, dest_data, has_reveal)
 
   self.foundations[f_index]:add_stack(stack, has_reveal)
 
+  ActionText(self.effects, stack.pos.x, stack.pos.y, a_undo)
 end
 
 function Solitaire:in_deal(waste)
@@ -842,7 +843,16 @@ function DragInfoSolitaire:drop_effect(orig_data, dest_data)
 
   local x,  y = self.drop_sent.pos.x, self.drop_sent.pos.y
 
-  ActionText(self.solitaire.effects, x, y, a_f2f)
+  local text = a_f2f
+
+  if f_index == 8 then
+    text = a_w2f
+  end
+  if dest_index == 9 then
+    text = a_hole
+  end
+
+  ActionText(self.solitaire.effects, x, y, text)
 end
 
 function DragInfoSolitaire:in_drop(oreveal)
