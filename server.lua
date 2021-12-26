@@ -50,7 +50,15 @@ function table_reverse(t)
   return t
 end
 
-
+function table_remove_element(t, v)
+  for i = #t, 1, -1 do
+    if v == t[i] then
+      table.remove(t, i)
+      return true
+    end
+  end
+  return false
+end
 
 function table_write(table, sep)
   sep = sep or ' '

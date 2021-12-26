@@ -189,9 +189,10 @@ end
 
 Foundation = Object:extend()
 Foundation:implement(HasPos)
-function Foundation:init(logic, x, y, index)
+function Foundation:init(solitaire, x, y, index)
   self:init_pos(Vector(x, y))
-  self.logic = logic
+  self.solitaire = solitaire
+  self.logic = solitaire.logic
   self.downturned = CardStack(x, y)
   self.upturned = CardStack(x, y)
   self.index = index
@@ -250,7 +251,7 @@ function Foundation:drag_test_cut_stack(x, y)
 
 
   if hit_index ~= nil then
-    return DragInfoSolitaire(self.logic, self.upturned:cut(hit_index), hit_decay, self, self:orig_data(hit_index))
+    return DragInfoSolitaire(self.solitaire, self.upturned:cut(hit_index), hit_decay, self, self:orig_data(hit_index))
   end
 end
 
@@ -279,8 +280,9 @@ end
 
 Waste = Object:extend()
 Waste:implement(HasPos)
-function Waste:init(logic, x, y)
-  self.logic = logic
+function Waste:init(solitaire, x, y)
+  self.solitaire = solitaire
+  self.logic = solitaire.logic
   self:init_pos(Vector(x, y))
   self.cards = CardStack(x, y) 
   self.orig_data = 800
@@ -294,7 +296,7 @@ function Waste:drag_test_cut_stack(x, y)
   local hit_index, hit_decay = self.cards:hit_target_index(x, y)
 
   if hit_index == 1 then
-    return DragInfoSolitaire(self.logic,
+    return DragInfoSolitaire(self.solitaire,
     self.cards:cut(hit_index), hit_decay,
     self, self.orig_data)
   end
@@ -317,10 +319,11 @@ end
 
 Stock = Object:extend()
 Stock:implement(HasPos)
-function Stock:init(logic, x, y)
+function Stock:init(solitaire, x, y)
+  self.solitaire = solitaire.logic
+  self.logic = solitaire.logic
   self:init_pos(Vector(x, y))
   self.visual = StillCard(BackCard(), self.pos)
-  self.logic = logic
 end
 
 function Stock:click_test(x, y)
@@ -347,8 +350,9 @@ end
 
 Hole = Object:extend()
 Hole:implement(HasPos)
-function Hole:init(logic, x, y, index)
-  self.logic = logic
+function Hole:init(solitaire, x, y, index)
+  self.solitaire = solitaire
+  self.logic = solitaire.logic
   self:init_pos(Vector(x, y))
   self.cards = CardStack(x, y, 0)
 
@@ -391,7 +395,7 @@ function Hole:drag_test_cut_stack(x, y)
   local hit_index, hit_decay = self.cards:hit_target_base(x, y)
 
   if hit_index then
-    return DragInfoSolitaire(self.logic, self.cards:cut(1), hit_decay, self, self.orig_data)
+    return DragInfoSolitaire(self.solitaire, self.cards:cut(1), hit_decay, self, self.orig_data)
   end
 
 end
@@ -621,32 +625,34 @@ end
 Solitaire = Object:extend()
 function Solitaire:init(logic)
 
-  self.bg = anim8.newAnimation(gbg(1, 1), 1)
-
-  self.foundations = {
-    Foundation(logic, 33 * 0 + 50, 11, 1),
-    Foundation(logic, 33 * 1 + 50, 11, 2),
-    Foundation(logic, 33 * 2 + 50, 11, 3),
-    Foundation(logic, 33 * 3 + 50, 11, 4),
-    Foundation(logic, 33 * 4 + 50, 11, 5),
-    Foundation(logic, 33 * 5 + 50, 11, 6),
-    Foundation(logic, 33 * 6 + 50, 11, 7),
-  }
-
-  self.stock = Stock(logic, 6, 11)
-  self.waste = Waste(logic, 6, 57)
-
-  self.holes = {
-    Hole(logic, 33 * 7 + 52, 11 + 42 * 0, 1),
-    Hole(logic, 33 * 7 + 52, 11 + 42 * 1, 2),
-    Hole(logic, 33 * 7 + 52, 11 + 42 * 2, 3),
-    Hole(logic, 33 * 7 + 52, 11 + 42 * 3, 4),
-  }
-
   self.logic = logic
 
+  self.bg = anim8.newAnimation(gbg(1, 1), 1)
 
-  self.undo = Undo(logic, 6, 160)
+
+  self.effects = {}
+
+  self.foundations = {
+    Foundation(self, 33 * 0 + 50, 11, 1),
+    Foundation(self, 33 * 1 + 50, 11, 2),
+    Foundation(self, 33 * 2 + 50, 11, 3),
+    Foundation(self, 33 * 3 + 50, 11, 4),
+    Foundation(self, 33 * 4 + 50, 11, 5),
+    Foundation(self, 33 * 5 + 50, 11, 6),
+    Foundation(self, 33 * 6 + 50, 11, 7),
+  }
+
+  self.stock = Stock(self, 6, 11)
+  self.waste = Waste(self, 6, 57)
+
+  self.holes = {
+    Hole(self, 33 * 7 + 52, 11 + 42 * 0, 1),
+    Hole(self, 33 * 7 + 52, 11 + 42 * 1, 2),
+    Hole(self, 33 * 7 + 52, 11 + 42 * 2, 3),
+    Hole(self, 33 * 7 + 52, 11 + 42 * 3, 4),
+  }
+
+  self.undo = Undo(self, 6, 160)
 end
 
 function Solitaire:drag_start(x, y)
@@ -736,6 +742,7 @@ end
 
 function Solitaire:in_drop(oreveal)
   if self.ds == nil then
+    -- TODO sync
     return self.logic:sync()
   end
 
@@ -753,6 +760,9 @@ end
 
 function Solitaire:update(dt)
 
+  for _, ef in ipairs(self.effects) do
+    ef:update(dt)
+  end
 
   if self.ds ~= nil then
     self.ds:update(dt)
@@ -807,24 +817,41 @@ function Solitaire:draw()
 
   self.undo:draw()
 
+  for _, ef in ipairs(self.effects) do
+    ef:draw()
+  end
+
 end
 
 DragInfoSolitaire = Object:extend()
-function DragInfoSolitaire:init(logic, stack, decay, target, orig_data)
+function DragInfoSolitaire:init(solitaire, stack, decay, target, orig_data)
   self.stack = stack
   self.decay = decay
   self.decay_target = Vector(-11, -4)
   self.target = target
-  self.logic = logic
+  self.solitaire = solitaire
+  self.logic = solitaire.logic
   self.orig_data = orig_data
 
   self.drop_sent = nil
+end
+
+function DragInfoSolitaire:drop_effect(orig_data, dest_data)
+  local f_index, stack_index = math.floor(orig_data / 100), orig_data % 100
+  local dest_index, hole_index = math.floor(dest_data / 100), (dest_data - 900) / 10
+
+  local x,  y = self.drop_sent.pos.x, self.drop_sent.pos.y
+
+  ActionText(self.solitaire.effects, x, y, a_f2f)
 end
 
 function DragInfoSolitaire:in_drop(oreveal)
   if oreveal ~= nil then
     self.target:reveal(UpCard(oreveal[1][1], oreveal[1][2]))
   end
+
+  self:drop_effect(self.orig_data, self.drop_sent.dest_data)
+
   self.drop_sent:in_drop(self.stack)
   self.drop_sent = nil
 end
@@ -965,6 +992,54 @@ function MouseDraw:draw()
   local x, y = math.round(self.pos.x), math.round(self.pos.y)
   self.anim:draw(sprites, x, y)
 end
+
+
+a_deal = 1
+a_f2f = 2
+a_undo = 3
+a_w2f = 4
+a_hole = 5
+a_h2f = 6
+
+ActionText = Object:extend()
+ActionText:implement(HasPos)
+function ActionText:init(group, x, y, text_index)
+  self:init_pos(Vector(x, y))
+  self.group = group
+  table.insert(self.group, self)
+
+  self.anim = anim8.newAnimation(g177('1-6', 1), 1)
+  self.anim:gotoFrame(text_index)
+
+
+
+  self.t = Trigger()
+
+  self.i = 0
+  self.t:tween(1, self, { i=1 }, math.sine_out, function()
+    table_remove_element(self.group, self)
+  end)
+end
+
+function ActionText:update(dt)
+  self.t:update(dt)
+end
+
+function ActionText:draw()
+  local off = 16 * self.i
+  local x, y = math.round(-8 + off + self.pos.x),
+  math.round(self.pos.y)
+  local w, h = math.round(17+16 - 8 * self.i), 7 + 2
+
+  graphics.rectangle(x-8, y-1, w, h, 1, 1, colors.white)
+  self.anim:draw(sprites, x, y)
+end
+
+
+
+
+
+
 
 
 
@@ -1143,8 +1218,9 @@ end
 
 Undo = Object:extend()
 Undo:implement(HasPos)
-function Undo:init(logic, x, y)
-  self.logic = logic
+function Undo:init(solitaire, x, y)
+  self.solitaire = solitaire
+  self.logic = solitaire.logic
   self:init_pos(Vector(x, y))
 
   self.anim = anim8.newAnimation(g1212(1, 1), 1)

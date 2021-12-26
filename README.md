@@ -15,9 +15,13 @@
 - [+] Drag Hole
 - [+] Undo Drop F to F
 - [+] Undo Drop F to H
-- [ ] Undo Drop H to F
+- [ ] Undo Deal W
 - [ ] Undo Drop W to F
 - [ ] Can Drop at Foundation
 - [ ] Can Drop at Hole
 - [ ] Can Drag from Foundation
-- [ ] Cant Drop more than 20 cards
+- [ ] Drop H to F and Undo
+
+- [ ] Action text
+- [ ] reveal action
+- [ ] Waste Stock movement
