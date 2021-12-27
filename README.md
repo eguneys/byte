@@ -1,5 +1,6 @@
 - [ ] Mouse Cursor look like when, idle, clicked on empty, hover/click on action, drag card
 - [ ] highlight hover , inactive, click
+- [ ] Figure out animations for, Deal, Undo deal, Redeal waste cards to stock
 
 
 ## TODO
@@ -15,9 +16,9 @@
 - [+] Drag Hole
 - [+] Undo Drop F to F
 - [+] Undo Drop F to H
-- [ ] Undo Deal W
-- [ ] Undo Drop W to F
-- [ ] Can Drop at Foundation
+- [@] Undo Deal W
+- [+] Undo Drop W to F
+- [.] Can Drop at Foundation
 - [ ] Can Drop at Hole
 - [ ] Can Drag from Foundation
 - [ ] Drop H to F
@@ -25,10 +26,11 @@
 
 - [ ] Hole to Foundation shadow back
 
+- [ ] empty text dedup
 - [ ] Suit art on front facing cards
 - [ ] Suit art on hole background
 - [ ] Action text with count
-- [ ] No action Text
+- [ ] No action Text, no undo, cant drop
 - [ ] reveal action
 - [ ] Waste Stock movement
 

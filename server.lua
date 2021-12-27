@@ -238,6 +238,11 @@ function OSolitaire:undo()
     return 'no'
   end
 
+  if undo[1] == 'deal' then
+    local nb = self:_undeal()
+    return 'deal' .. ' ' .. nb
+  end
+
   local orig_data, dest_data, oreveal = unpack(undo)
 
   self:_undrop(orig_data, dest_data, oreveal ~= nil)
@@ -252,8 +257,17 @@ function OSolitaire:deal()
   if not self.stock:is_empty() then
     local res = self.stock:pop(3)
     self.waste:append(res)
+
+    table.insert(self.undo_stack, { 'deal' })
+
     return res
   end
+end
+
+function OSolitaire:_undeal()
+  local stack = self.waste:cut(3)
+  self.stock:append(stack)
+  return 3
 end
 
 function OSolitaire:_undrop(orig_data, dest_data, has_reveal)
@@ -268,7 +282,11 @@ function OSolitaire:_undrop(orig_data, dest_data, has_reveal)
     stack = self.fs[dest_index]:cut(stack_index)
   end
 
-  self.fs[f_index]:uncut(stack, has_reveal)
+  if f_index == 8 then
+    self.waste:append(stack)
+  else
+    self.fs[f_index]:uncut(stack, has_reveal)
+  end
 
 end
 
@@ -283,8 +301,14 @@ function OSolitaire:drop(orig_data, dest_data)
     if dest_index == 9 then
       return 'no'
     end
+    if stack_index ~= 1 then
+      -- not necessary
+      return 'no'
+    end
     local stack = self.waste:pop(1)
     self.fs[dest_index]:paste(stack)
+
+    table.insert(self.undo_stack, { orig_data, dest_data })
     return 'ok'
   else
 

@@ -289,7 +289,15 @@ function Waste:init(solitaire, x, y)
   self.logic = solitaire.logic
   self:init_pos(Vector(x, y))
   self.cards = CardStack(x, y) 
-  self.orig_data = 800
+  self.orig_data = 801
+end
+
+function Waste:remove_stack(nb)
+  return self.cards:cut(nb)
+end
+
+function Waste:add_stack(stack)
+  return self.cards:paste(stack.cards)
 end
 
 function Waste:drag_cancel(stack)
@@ -328,6 +336,10 @@ function Stock:init(solitaire, x, y)
   self.logic = solitaire.logic
   self:init_pos(Vector(x, y))
   self.visual = StillCard(BackCard(), self.pos)
+end
+
+function Stock:add_stack(stack)
+  -- TODO
 end
 
 function Stock:click_test(x, y)
@@ -720,6 +732,16 @@ function Solitaire:drag_stop(x, y)
   end
 end
 
+function Solitaire:in_undo_deal(nb)
+
+  local stack = self.waste:remove_stack(nb)
+
+  self.stock:add_stack(stack)
+
+  ActionText(self.effects, stack.pos.x, stack.pos.y, a_undo)
+end
+
+
 function Solitaire:in_undo(orig_data, dest_data, has_reveal)
   local f_index, stack_index = math.floor(orig_data / 100), orig_data % 100
   local dest_index, hole_index = math.floor(dest_data / 100), (dest_data - 900) / 10
@@ -732,7 +754,11 @@ function Solitaire:in_undo(orig_data, dest_data, has_reveal)
     stack = self.foundations[dest_index]:remove_stack(stack_index)
   end
 
-  self.foundations[f_index]:add_stack(stack, has_reveal)
+  if f_index == 8 then
+    self.waste:add_stack(stack)
+  else 
+    self.foundations[f_index]:add_stack(stack, has_reveal)
+  end
 
   ActionText(self.effects, stack.pos.x, stack.pos.y, a_undo)
 end
@@ -858,7 +884,7 @@ function DragInfoSolitaire:drop_effect(orig_data, dest_data)
 
   ActionText(self.solitaire.effects, x, y, text)
 
-  if self.target:is_empty() then
+  if f_index <= 7 and self.target:is_empty() then
     ActionText2(self.solitaire.effects,
     self.target.pos.x, self.target.pos.y, a2_empty)
   end
@@ -1157,13 +1183,17 @@ function SolitaireLogic:update(dt)
         return
       end
 
-      local _, _, ok, rest = args:find("^(ok%f[%A]);?(.+)$")
+      --local _, _, ok, rest = args:find("^(ok%f[%A]);?(.+)$")
 
-      local undo_data = read_spaces(rest)
+      local undo_data = read_spaces(args)
 
-      local orig_data, dest_data, has_reveal = unpack(undo_data)
+      local ok, orig_data, dest_data, has_reveal = unpack(undo_data)
 
-      self:in_undo(orig_data, dest_data, has_reveal == 'reveal')
+      if ok == 'deal' then
+        self:in_undo_deal(orig_data)
+      elseif ok == 'ok' then
+        self:in_undo(orig_data, dest_data, has_reveal == 'reveal')
+      end
     elseif cmd == 'deal' then
       if args == 'no' then
         -- TODO in deal no
@@ -1211,6 +1241,10 @@ end
 
 function SolitaireLogic:in_undo(orig_data, dest_data, has_reveal)
   self.scene.solitaire:in_undo(orig_data, dest_data, has_reveal)
+end
+
+function SolitaireLogic:in_undo_deal(nb)
+  self.scene.solitaire:in_undo_deal(nb)
 end
 
 function SolitaireLogic:in_deal(waste)
