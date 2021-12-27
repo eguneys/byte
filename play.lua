@@ -659,7 +659,7 @@ function Solitaire:init(logic)
   }
 
   self.stock = Stock(self, 6, 11)
-  self.waste = Waste(self, 6, 57)
+  self.waste = Waste(self, 6, 65)
 
   self.holes = {
     Hole(self, 33 * 7 + 52, 11 + 42 * 0, 1),
@@ -769,6 +769,7 @@ function Solitaire:in_deal(waste)
     return RevealCard(UpCard(oc[1], oc[2]), self.stock.pos)
   end))
 
+  ActionText(self.effects, self.stock.pos.x, self.stock.pos.y, a_deal)
 end
 
 function Solitaire:in_drop(oreveal)
