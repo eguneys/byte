@@ -631,8 +631,6 @@ function LoadSolitaire:init(logic, data)
     end
 
     self.solitaire.waste:add_stack(OCardStack(tmp))
-
-
   end
 
 end
@@ -1055,6 +1053,57 @@ function MouseDraw:draw()
   self.anim:draw(sprites, x, y)
 end
 
+TooltipText = Object:extend()
+TooltipText:implement(HasPos)
+function TooltipText:init(group, x, y, w, h, text)
+  self:init_pos(Vector(x, y))
+  self.w = w
+  self.h = h
+  self.group = group
+  self.text = text
+  table.insert(self.group, self)
+
+  self.i = -1 
+  self.t = Trigger()
+end
+
+function TooltipText:update(dt)
+  self.t:update(dt)
+
+  if self.i == -1 then
+    if hit_test_rect(self.pos.x, self.pos.y, self.w, self.h, Mouse.x, Mouse.y) then
+      self:show()
+    end
+  elseif self.i == 1 then
+    if not hit_test_rect(self.pos.x, self.pos.y, self.w, self.h, Mouse.x, Mouse.y) then
+      self.i = -1
+    end
+  end
+end
+
+function TooltipText:show()
+
+  self.i = 0
+  self.t:tween(0.2, self, { i = 1 }, math.sine_out, function()
+    self.i = 1
+  end)
+
+end
+
+
+function TooltipText:draw()
+  if self.i == -1 then return end
+
+  local x, y = math.round(self.pos.x), math.round(self.pos.y - 12)
+  local len = self.text:len() * self.i
+
+  graphics.rectangle(x-4, y-4, 4 * len + 8, 5 + 8, 0, 0, colors.black)
+  if self.i == 1 then
+    graphics.print(self.text, font, x, y, 0, 1, 1, 0, 0, colors.white)
+  end
+end
+
+
 
 a_deal = 1
 a_f2f = 2
@@ -1334,6 +1383,9 @@ function Undo:init(solitaire, x, y)
 
   self.anim = anim8.newAnimation(g1212(1, 1), 1)
   self.shadow = anim8.newAnimation(g1212(2, 1), 1)
+
+
+  TooltipText(self.solitaire.effects, self.pos.x, self.pos.y, 16, 16, 'undo')
 end
 
 
