@@ -84,8 +84,16 @@ function OCardStack:init(cards)
   self.cards = table_slice(cards)
 end
 
+function OCardStack:clone()
+  return OCardStack(self.cards)
+end
+
 function OCardStack:is_empty()
   return #self.cards == 0
+end
+
+function OCardStack:size()
+  return #self.cards
 end
 
 function OCardStack:push(card)
@@ -200,6 +208,41 @@ function OHole:write()
 end
 
 
+OWaste = Object:extend()
+function OWaste:init()
+  self.waste = {}
+  self.stack = OCardStack({})
+end
+
+function OWaste:unpop(cards)
+  self.stack:append(cards)
+end
+
+function OWaste:pop()
+  return self.stack:pop(1)
+end
+
+function OWaste:deal_stack(cards)
+  table.insert(self.waste, self.stack)
+  self.stack = OCardStack(cards)
+end
+
+function OWaste:undeal_stack()
+  local res = self.stack:pop(self.stack:size())
+
+  self.stack = table.remove(self.waste) or OCardStack({})
+
+  return res
+end
+
+function OWaste:peek()
+  return self.stack:peek(self.stack:size())
+end
+
+function OWaste:write()
+  return self.stack:write()
+end
+
 -- 100 700 foundation indexes
 -- 101-113 stack indexes
 -- 800 waste index
@@ -221,7 +264,7 @@ function OSolitaire:init(_deck)
 
 
   self.stock = dstack
-  self.waste = OCardStack({})
+  self.waste = OWaste({}, {})
 
 
   self.holes = {
@@ -260,7 +303,7 @@ end
 function OSolitaire:deal()
   if not self.stock:is_empty() then
     local res = self.stock:pop(3)
-    self.waste:append(res)
+    self.waste:deal_stack(res)
 
     table.insert(self.undo_stack, { 'deal' })
 
@@ -269,10 +312,10 @@ function OSolitaire:deal()
 end
 
 function OSolitaire:_undeal()
-  local stack = self.waste:cut(3)
+  local stack = self.waste:undeal_stack()
   self.stock:append(stack)
 
-  return self.waste:peek(3)
+  return self.waste:peek()
 end
 
 function OSolitaire:_undrop(orig_data, dest_data, has_reveal)
@@ -288,7 +331,7 @@ function OSolitaire:_undrop(orig_data, dest_data, has_reveal)
   end
 
   if f_index == 8 then
-    self.waste:append(stack)
+    self.waste:unpop(stack)
   else
     self.fs[f_index]:uncut(stack, has_reveal)
   end
@@ -310,7 +353,8 @@ function OSolitaire:drop(orig_data, dest_data)
       -- not necessary
       return 'no'
     end
-    local stack = self.waste:pop(1)
+    -- TODO maybe nil
+    local stack = self.waste:pop()
     self.fs[dest_index]:paste(stack)
 
     table.insert(self.undo_stack, { orig_data, dest_data })
@@ -335,7 +379,8 @@ function OSolitaire:write()
   return table.concat(
   table_map(self.fs, fn_write), ';') .. ';' ..
   table.concat(
-  table_map(self.holes, fn_write), ';')
+  table_map(self.holes, fn_write), ';') .. ';' ..
+  OCardStack(self.waste:peek(3)):write()
 end
 
 SolitaireServer = Object:extend()

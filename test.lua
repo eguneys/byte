@@ -39,6 +39,63 @@ function test_solitaire()
 
 end
 
+function waste_undo()
+
+  -- deal deal pop deal undeal
+  dstack = OCardStack(deck)
+  waste = OWaste({}, {})
+
+  waste:deal_stack(dstack:pop(3))
+  waste:deal_stack(dstack:pop(3))
+  print(waste:write(), 'deal deal')
+  waste:pop()
+  print(waste:write(), 'pop')
+  waste:deal_stack(dstack:pop(3))
+  print(waste:write(), 'deal')
+  waste:undeal_stack()
+  print(waste:write(), 'undeal')
+
+end
+
+function waste_basic()
+
+  dstack = OCardStack(deck)
+  waste = OWaste({}, {})
+
+  waste:deal_stack(dstack:pop(3))
+  print(waste:write())
+  waste:deal_stack(dstack:pop(3))
+  print(waste:write())
+
+  local stack = waste:pop()
+
+  print(waste:write(), ' popped ', OCardStack(stack):write(), 'pop')
+
+  stack = waste:pop()
+  print(waste:write(), ' popped ', OCardStack(stack):write(), 'pop')
+
+  stack = waste:pop()
+  print(waste:write(), ' popped ', OCardStack(stack):write(), 'pop')
+
+  stack = waste:pop()
+  print(waste:write(), ' popped ', OCardStack(stack):write(), 'pop')
+
+
+  waste:unpop(dstack:pop(1))
+  print(waste:write(), 'unpop')
+
+  waste:unpop(dstack:pop(1))
+  print(waste:write(), 'unpop')
+
+  waste:unpop(dstack:pop(1))
+  print(waste:write(), 'unpop')
+
+
+  stack = waste:undeal_stack()
+  print(waste:write(), ' stack ',  OCardStack(stack):write(), 'undeal')
+
+end
+
 function undo_basic()
 
   print('[undo basic]')
@@ -114,4 +171,6 @@ function test_table()
 
 end
 
-test_solitaire()
+--test_solitaire()
+--waste_basic()
+waste_undo()

@@ -18,7 +18,8 @@
 - [+] Undo Drop F to H
 - [+] Undo Deal W
 - [+] Undo Drop W to F
-- [@] Load Waste
+- [+] Load Waste, dont allow extra access
+- [@] Shuffle Deck, new game
 - [.] Can Drop at Foundation
 - [ ] Can Drop at Hole
 - [ ] Can Drag from Foundation

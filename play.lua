@@ -622,6 +622,18 @@ function LoadSolitaire:init(logic, data)
     hole:add_cards(cards)
   end
 
+  local waste = data[12]
+  if waste ~= nil then
+    local tmp = {}
+    for i=1,#waste, 2 do
+      local suit, rank = waste[i], waste[i+1]
+      table.insert(tmp, StillCard(UpCard(suit, rank), self.solitaire.stock.pos))
+    end
+
+    self.solitaire.waste:add_stack(OCardStack(tmp))
+
+
+  end
 
 end
 
