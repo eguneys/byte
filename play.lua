@@ -678,7 +678,8 @@ function Solitaire:init(logic)
     Hole(self, 33 * 7 + 52, 11 + 42 * 3, 4),
   }
 
-  self.undo = Undo(self, 6, 160)
+  self.undo = Undo(self, 6, 140)
+  self.newgame = NewGame(self, 6, 160)
 end
 
 function Solitaire:drag_start(x, y)
@@ -691,6 +692,9 @@ function Solitaire:drag_start(x, y)
     return
   end
 
+  if self.newgame:maybe_click(x, y) then
+    return
+  end
 
 
   if self.ds ~= nil then return end
@@ -825,6 +829,7 @@ function Solitaire:update(dt)
 
 
   self.undo:update(dt)
+  self.newgame:update(dt)
 end
 
 function Solitaire:draw()
@@ -859,6 +864,7 @@ function Solitaire:draw()
 
 
   self.undo:draw()
+  self.newgame:draw()
 
   for _, ef in ipairs(self.effects) do
     ef:draw()
@@ -1371,6 +1377,47 @@ function read_spaces(str)
   end
   return res
 end
+
+
+NewGame = Object:extend()
+NewGame:implement(HasPos)
+function NewGame:init(solitaire, x, y)
+  self.solitaire = solitaire
+  self.logic = solitaire.logic
+  self:init_pos(Vector(x, y))
+
+  self.anim = anim8.newAnimation(g1212(3, 1), 1)
+  self.shadow = anim8.newAnimation(g1212(4, 1), 1)
+
+
+  TooltipText(self.solitaire.effects, self.pos.x, self.pos.y, 16, 16, 'new game')
+end
+
+
+function NewGame:click_test(x, y)
+  return hit_test_rect(self.pos.x -2, self.pos.y - 2, 16, 16, x, y)
+end
+
+function NewGame:maybe_click(x, y)
+  if self:click_test(x, y) then
+    self.logic:out_newgame()
+    return true
+  end
+end
+
+
+
+function NewGame:update(dt)
+  if Input:btn('n') == 2 then
+    self.logic:out_newgame()
+  end
+end
+
+function NewGame:draw()
+  self.shadow:draw(sprites, self.pos.x + 1, self.pos.y + 1)
+  self.anim:draw(sprites, self.pos.x, self.pos.y)
+end
+
 
 
 
