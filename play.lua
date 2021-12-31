@@ -315,8 +315,8 @@ function Waste:drag_test_cut_stack(x, y)
 end
 
 
-function Waste:set(card)
-  self.cards:set(card)
+function Waste:set(cards)
+  self.cards:set(cards)
 end
 
 function Waste:update(dt)
@@ -732,13 +732,14 @@ function Solitaire:drag_stop(x, y)
   end
 end
 
-function Solitaire:in_undo_deal(nb)
+function Solitaire:in_undo_deal(waste)
 
-  local stack = self.waste:remove_stack(nb)
+  self.waste:set(table_map(waste, function (oc) 
+    return RevealCard(UpCard(oc[1], oc[2]), self.stock.pos)
+  end))
 
-  self.stock:add_stack(stack)
 
-  ActionText(self.effects, stack.pos.x, stack.pos.y, a_undo)
+  ActionText(self.effects, self.stock.pos.x, self.stock.pos.y, a_undo)
 end
 
 
@@ -1191,7 +1192,11 @@ function SolitaireLogic:update(dt)
       local ok, orig_data, dest_data, has_reveal = unpack(undo_data)
 
       if ok == 'deal' then
-        self:in_undo_deal(orig_data)
+
+        -- split deal and card stack
+        local cmd, wastestr = args:match("^(%a*) ?(.*)")
+        local waste = read_stack(wastestr)
+        self:in_undo_deal(waste)
       elseif ok == 'ok' then
         self:in_undo(orig_data, dest_data, has_reveal == 'reveal')
       end
@@ -1244,8 +1249,8 @@ function SolitaireLogic:in_undo(orig_data, dest_data, has_reveal)
   self.scene.solitaire:in_undo(orig_data, dest_data, has_reveal)
 end
 
-function SolitaireLogic:in_undo_deal(nb)
-  self.scene.solitaire:in_undo_deal(nb)
+function SolitaireLogic:in_undo_deal(waste)
+  self.scene.solitaire:in_undo_deal(waste)
 end
 
 function SolitaireLogic:in_deal(waste)

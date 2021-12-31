@@ -16,8 +16,9 @@
 - [+] Drag Hole
 - [+] Undo Drop F to F
 - [+] Undo Drop F to H
-- [@] Undo Deal W
+- [+] Undo Deal W
 - [+] Undo Drop W to F
+- [@] Load Waste
 - [.] Can Drop at Foundation
 - [ ] Can Drop at Hole
 - [ ] Can Drag from Foundation
@@ -28,7 +29,7 @@
 
 - [ ] empty text dedup
 - [ ] Suit art on front facing cards
-- [ ] Suit art on hole background
+- [b] Suit art on hole background
 - [ ] Action text with count
 - [ ] No action Text, no undo, cant drop
 - [ ] reveal action

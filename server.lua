@@ -104,6 +104,10 @@ function OCardStack:cut(n)
   return self:pop(n)
 end
 
+function OCardStack:peek(n)
+  return table_slice(self.cards, #self.cards - n + 1, #self.cards)
+end
+
 
 function OCardStack:write()
   return table.concat(
@@ -239,8 +243,8 @@ function OSolitaire:undo()
   end
 
   if undo[1] == 'deal' then
-    local nb = self:_undeal()
-    return 'deal' .. ' ' .. nb
+    local stack = self:_undeal()
+    return 'deal' .. ' ' .. OCardStack(stack):write() 
   end
 
   local orig_data, dest_data, oreveal = unpack(undo)
@@ -267,7 +271,8 @@ end
 function OSolitaire:_undeal()
   local stack = self.waste:cut(3)
   self.stock:append(stack)
-  return 3
+
+  return self.waste:peek(3)
 end
 
 function OSolitaire:_undrop(orig_data, dest_data, has_reveal)
