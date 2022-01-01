@@ -1132,9 +1132,16 @@ function ActionText:init(group, x, y, text_index)
 
   self.t = Trigger()
 
-  self.i = 0
-  self.t:tween(1, self, { i=1 }, math.sine_out, function()
-    table_remove_element(self.group, self)
+  self.off = -8 
+  self.w = 4
+  self.h = 9
+  self.t:tween(0.2, self, { off=0, w=32 }, math.sine_in, function()
+    self.t:tween(0.8, self, { off=8, w=24 }, math.sine_out, function()
+      self.off = 8
+      self.t:tween(0.2, self, { w=4 }, math.sine_out, function()
+        table_remove_element(self.group, self)
+      end)
+    end)
   end)
 end
 
@@ -1143,13 +1150,18 @@ function ActionText:update(dt)
 end
 
 function ActionText:draw()
-  local off = 16 * self.i
-  local x, y = math.round(-8 + off + self.pos.x),
-  math.round(self.pos.y - 8)
-  local w, h = math.round(17+16 - 8 * self.i), 7 + 2
 
-  graphics.rectangle(x-8, y-1, w, h, 1, 1, colors.white)
-  self.anim:draw(sprites, -4 + x + math.round(off * 0.4), y)
+  local off = self.off
+  local x, y = math.round(self.pos.x), math.round(self.pos.y - 8)
+  local w, h = math.round(self.w), self.h 
+
+  if self.off > 0 then
+    x = math.round(x + self.off)
+  end
+  graphics.rectangle(x, y-1, w, h, 1, 1, colors.white)
+  if self.off > 0 and self.off < 8 then
+    self.anim:draw(sprites, x + math.round(self.off), y)
+  end
 end
 
 
