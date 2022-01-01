@@ -1316,6 +1316,10 @@ function SolitaireLogic:out_drop(orig, dest)
   self.server:send(string.format('drop %02d %02d', orig, dest))
 end
 
+function SolitaireLogic:out_newgame()
+  self.server:send('newgame')
+end
+
 function SolitaireLogic:out_undo()
   self.server:send('undo')
 end

@@ -27,13 +27,11 @@
 - [ ] Undo H to F
 
 - [ ] Hole to Foundation shadow back
-
-- [ ] empty text dedup
+- [+] Suit art on hole background
 - [ ] Suit art on front facing cards
-- [b] Suit art on hole background
-- [ ] Action text with count
-- [ ] No action Text, no undo, cant drop
-- [ ] reveal action
 - [ ] Waste Stock movement
-
+- [ ] No action Text, no undo, cant drop
+- [ ] Action text with count
+- [ ] reveal card
+- [ ] empty text dedup
 

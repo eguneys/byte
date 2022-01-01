@@ -404,7 +404,10 @@ end
 function SolitaireServer:send(msg)
   local cmd, args = msg:match("^(%a*) ?(.*)$")
     
-  if cmd == 'undo' then
+  if cmd == 'newgame' then
+
+
+  elseif cmd == 'undo' then
 
     local res, undo_data = self.solitaire:undo()
     self:message('undo', res, undo_data)
