@@ -588,9 +588,11 @@ end
 LoadSolitaire = Object:extend()
 function LoadSolitaire:init(logic, data)
 
-  self.solitaire = Solitaire(logic)
-  self.md = MouseDraw(self.solitaire)
-
+  self.solitaire = Solitaire(logic, function()
+    self.sidemenu:show()
+  end)
+  self.sidemenu = SideMenu(self.solitaire)
+  self.md = MouseDraw(self.solitaire, self.sidemenu)
   for fi=1,7 do
     local fs = data[fi]
     local foun = self.solitaire.foundations[fi]
@@ -636,6 +638,7 @@ function LoadSolitaire:init(logic, data)
 end
 
 function LoadSolitaire:update(dt)
+  self.sidemenu:update(dt)
   self.solitaire:update(dt)
   self.md:update(dt)
 end
@@ -643,13 +646,14 @@ end
 
 function LoadSolitaire:draw()
   self.solitaire:draw()
+  self.sidemenu:draw()
   self.md:draw()
 end
 
 
 
 Solitaire = Object:extend()
-function Solitaire:init(logic)
+function Solitaire:init(logic, onmenu)
 
   self.logic = logic
 
@@ -678,8 +682,9 @@ function Solitaire:init(logic)
     Hole(self, 33 * 7 + 52, 11 + 42 * 3, 4),
   }
 
+  self.onmenu = onmenu
   self.undo = Undo(self, 6, 140)
-  self.newgame = NewGame(self, 6, 160)
+  self.gotomenu = GotoMenu(self, 6, 160)
 end
 
 function Solitaire:drag_start(x, y)
@@ -692,7 +697,7 @@ function Solitaire:drag_start(x, y)
     return
   end
 
-  if self.newgame:maybe_click(x, y) then
+  if self.gotomenu:maybe_click(x, y) then
     return
   end
 
@@ -805,6 +810,11 @@ function Solitaire:in_drop_cancel()
   self.ds = nil
 end
 
+function Solitaire:goto_menu()
+  self.onmenu()
+end
+
+
 function Solitaire:update(dt)
 
   for _, ef in ipairs(self.effects) do
@@ -829,7 +839,7 @@ function Solitaire:update(dt)
 
 
   self.undo:update(dt)
-  self.newgame:update(dt)
+  self.gotomenu:update(dt)
 end
 
 function Solitaire:draw()
@@ -864,12 +874,11 @@ function Solitaire:draw()
 
 
   self.undo:draw()
-  self.newgame:draw()
+  self.gotomenu:draw()
 
   for _, ef in ipairs(self.effects) do
     ef:draw()
   end
-
 end
 
 DragInfoSolitaire = Object:extend()
@@ -889,7 +898,7 @@ function DragInfoSolitaire:drop_effect(orig_data, dest_data)
   local f_index, stack_index = math.floor(orig_data / 100), orig_data % 100
   local dest_index, hole_index = math.floor(dest_data / 100), (dest_data - 900) / 10
 
-  local x,  y = self.drop_sent.pos.x, self.drop_sent.pos.y
+  local x, y = self.drop_sent.pos.x, self.drop_sent.pos.y
 
   local text = a_f2f
 
@@ -1016,20 +1025,28 @@ end
 
 MouseDraw = Object:extend()
 MouseDraw:implement(HasPos)
-function MouseDraw:init(drag)
+function MouseDraw:init(drag, menu)
   local x, y = Mouse.x, Mouse.y
   self:init_pos(Vector(x, y))
   self.anim = anim8.newAnimation(g128('1-2', 1), 1)
   self.anim:gotoFrame(1)
 
   self.drag = drag
+  self.menu = menu
 end
 
 function MouseDraw:drag_start()
+  if self.menu:capture_mouse() then
+    self.menu:click(Mouse.x, Mouse.y)
+    return
+  end
   self.drag:drag_start(Mouse.x, Mouse.y)
 end
 
 function MouseDraw:drag_stop()
+  if self.menu:capture_mouse() then
+    return
+  end
   self.drag:drag_stop(Mouse.x, Mouse.y)
 end
 
@@ -1408,41 +1425,40 @@ function read_spaces(str)
 end
 
 
-NewGame = Object:extend()
-NewGame:implement(HasPos)
-function NewGame:init(solitaire, x, y)
+GotoMenu = Object:extend()
+GotoMenu:implement(HasPos)
+function GotoMenu:init(solitaire, x, y)
   self.solitaire = solitaire
-  self.logic = solitaire.logic
   self:init_pos(Vector(x, y))
 
-  self.anim = anim8.newAnimation(g1212(3, 1), 1)
-  self.shadow = anim8.newAnimation(g1212(4, 1), 1)
+  self.anim = anim8.newAnimation(g1212(5, 1), 1)
+  self.shadow = anim8.newAnimation(g1212(6, 1), 1)
 
 
-  TooltipText(self.solitaire.effects, self.pos.x, self.pos.y, 16, 16, 'new game')
+  TooltipText(self.solitaire.effects, self.pos.x, self.pos.y, 16, 16, 'menu')
 end
 
 
-function NewGame:click_test(x, y)
+function GotoMenu:click_test(x, y)
   return hit_test_rect(self.pos.x -2, self.pos.y - 2, 16, 16, x, y)
 end
 
-function NewGame:maybe_click(x, y)
+function GotoMenu:maybe_click(x, y)
   if self:click_test(x, y) then
-    self.logic:out_newgame()
+    self.solitaire:goto_menu()
     return true
   end
 end
 
 
 
-function NewGame:update(dt)
-  if Input:btn('n') == 2 then
-    self.logic:out_newgame()
+function GotoMenu:update(dt)
+  if Input:btn('m') == 2 then
+    self.solitaire:goto_menu()
   end
 end
 
-function NewGame:draw()
+function GotoMenu:draw()
   self.shadow:draw(sprites, self.pos.x + 1, self.pos.y + 1)
   self.anim:draw(sprites, self.pos.x, self.pos.y)
 end
@@ -1489,6 +1505,156 @@ function Undo:draw()
   self.anim:draw(sprites, self.pos.x, self.pos.y)
 end
 
+SideMenu = Object:extend()
+function SideMenu:init(solitaire)
+
+
+  self.w = 0
+  self.t = Trigger()
+
+  self.i = 0
+
+  self.solitaire = solitaire
+  self.logic = solitaire.logic
+
+  self.group = {}
+
+
+  SideButton(self, 0, 160, "close", function()
+    self:hide()
+  end)
+
+
+  SideButton(self, 0, 140, "help", function()
+  end)
+  
+
+  SideButton(self, 0, 120, "settings", function()
+  end)
+  
+
+  SideButton(self, 0, 100, "new game", function()
+    self.logic:out_newgame()
+  end)
+
+  SideButton(self, 0, 80, "statistics", function()
+  end)
+
+  SideButton(self, 0, 60, "main menu", function()
+  end)
+
+
+
+
+end
+
+function SideMenu:capture_mouse()
+  return self.w > 0
+end
+
+function SideMenu:click(x, y)
+  for _, obj in ipairs(self.group) do
+    if obj:maybe_click(x, y) then
+      return
+    end
+  end
+end
+
+function SideMenu:show()
+  self.w = 0
+  self.t:tween(0.4, self, { w=60 }, math.sine_out, function() self.w = 60 end, 'show')
+end
+
+function SideMenu:hide()
+  self.t:tween(0.4, self, { w = 0 }, math.sine_out, function() self.w = 0 end, 'show')
+end
+
+function SideMenu:update(dt)
+  self.t:update(dt)
+  self.i = self.i + dt 
+  local r = math.abs(math.sin(((TAU / (6 * ticks.second)) * self.i)))
+  bg_shader:send('r', r)
+
+  for _, obj in ipairs(self.group) do
+    obj:update(dt)
+  end
+end
+
+function SideMenu:draw()
+
+  if self.w == 0 then return end
+
+  bg_shader:set()
+  love.graphics.draw(noisetex, 0, 0)
+  bg_shader:unset()
+
+  graphics.push(0, 0)
+  graphics.translate(-60+self.w)
+  graphics.rectangle(0, 0, 60, 180, 0, 0, colors.black)
+  graphics.print('solitaire', font, 2, 2, 0, 1, 1, 0, 0, colors.white)
+
+  for _, obj in ipairs(self.group) do
+    obj:draw()
+  end
+
+  graphics.pop()
+end
+
+
+SideButton = Object:extend()
+SideButton:implement(HasPos)
+function SideButton:init(menu, x, y, text, onclick)
+  self:init_pos(Vector(x, y))
+  self.text = text
+
+  self.menu = menu
+  table.insert(menu.group, self)
+
+  self.onclick = onclick
+
+  self.hover = 0
+  self.t = Trigger()
+end
+
+function SideButton:maybe_click(x, y)
+  if hit_test_rect(self.pos.x,
+    self.pos.y-2, 60, 12, x, y) then
+    self.onclick()
+    return true
+  end
+
+end
+
+function SideButton:update(dt)
+  self.t:update(dt)
+  if self.menu:capture_mouse() then
+    if hit_test_rect(self.pos.x,
+      self.pos.y-2, 60, 12, Mouse.x, Mouse.y) then
+
+      if self.hover == 0 then
+        self.t:tween(0.2, self, { hover=1 }, math.sine_out, function()
+          self.hover = 1
+        end, 'hover')
+      end
+    else
+      if self.hover == 1 then
+        self.t:tween(0.2, self, { hover=0 }, math.sine_out, function()
+          self.hover = 0
+        end, 'hover')
+      end
+    end
+  end
+end
+
+function SideButton:draw()
+  local x, y = math.round(self.pos.x), math.round(self.pos.y)
+  local text_color = self.hover == 0 and colors.white or colors.black
+  local bg_color = self.hover == 0 and colors.black or colors.white
+
+  graphics.rectangle(x, y-2, self.hover*60, 10, 0, 0, bg_color)
+  graphics.print(self.text, font, x+2, y, 0, 1, 1, 0, 0, text_color)
+
+end
 
 Play = Object:extend()
 

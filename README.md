@@ -26,6 +26,11 @@
 - [ ] Drop H to F
 - [ ] Undo H to F
 
+- [ ] Menu, stats, help, back, new game, 
+- [ ] Empty Stock Art
+- [ ] Cant Deal Art
+- [ ] Replace new game with menu
+- [ ] Stats, reveal, empty, f2f, w2f, hole, undo
 - [ ] Hole to Foundation shadow back
 - [+] Suit art on hole background
 - [ ] Suit art on front facing cards

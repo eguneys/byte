@@ -1,5 +1,19 @@
 function shared_init()
 
+  PI = 3.14
+  TAU = 2 * PI
+  rate = 1/60
+  ticks = {
+    second= rate * 60,
+    half= rate * 30,
+    third= rate * 20,
+    sixth= rate * 10,
+    lengths= rate * 5,
+    three= rate * 3,
+    one= rate * 1
+  }
+
+
    colors = {
       white=Color('#ffffff'),
       black=Color('#000000'),
@@ -28,5 +42,14 @@ function shared_init()
 
    gbg = anim8.newGrid(320, 180, 1024, 1024)
    font = Font('PICO-8', 5)
+
+
+   noisetex = love.image.newImageData(320, 180)
+   noisetex = love.graphics.newImage(noisetex)
+   noisetex:setWrap("repeat", "repeat")
+   noisetex:setFilter("nearest", "nearest")
+
+   bg_shader = Shader(nil, 'bg.frag')
+   --bg_shader:send("noisetex",sprites2)
 end
 

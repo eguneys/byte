@@ -406,6 +406,7 @@ function SolitaireServer:send(msg)
     
   if cmd == 'newgame' then
 
+    print('new game')
 
   elseif cmd == 'undo' then
 
