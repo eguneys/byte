@@ -81,6 +81,13 @@ return x < ax and x + w > ax and
   y < ay and y + h > ay
 end
 
+function hit_test_rect_big(x, y, w, h, ax, ay, by)
+  by = by or 4
+return x - by < ax and x + w + by > ax and
+  y - by < ay and y + h + by > ay
+end
+
+
 
 
 CardStack = Object:extend()
@@ -1617,7 +1624,7 @@ function SideButton:init(menu, x, y, text, onclick)
 end
 
 function SideButton:maybe_click(x, y)
-  if hit_test_rect(self.pos.x,
+  if hit_test_rect_big(self.pos.x,
     self.pos.y-2, 60, 12, x, y) then
     self.onclick()
     return true
@@ -1628,7 +1635,7 @@ end
 function SideButton:update(dt)
   self.t:update(dt)
   if self.menu:capture_mouse() then
-    if hit_test_rect(self.pos.x,
+    if hit_test_rect_big(self.pos.x,
       self.pos.y-2, 60, 12, Mouse.x, Mouse.y) then
 
       if self.hover == 0 then
