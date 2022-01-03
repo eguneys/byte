@@ -19,24 +19,37 @@
 - [+] Undo Deal W
 - [+] Undo Drop W to F
 - [+] Load Waste, dont allow extra access
-- [@] Shuffle Deck, new game
+- [+] Shuffle Deck, new game
 - [.] Can Drop at Foundation
 - [ ] Can Drop at Hole
 - [ ] Can Drag from Foundation
 - [ ] Drop H to F
 - [ ] Undo H to F
+- [ ] Can redeal
+- [ ] Deal count setting
 
-- [ ] Menu, stats, help, back, new game, 
+
+- [ ] Hole to Foundation shadow back
+- [+] reveal card
+- [ ] Menu, stats, help, settings, main menu, new game, 
 - [ ] Empty Stock Art
 - [ ] Cant Deal Art
-- [ ] Replace new game with menu
-- [ ] Stats, reveal, empty, f2f, w2f, hole, undo
-- [ ] Hole to Foundation shadow back
 - [+] Suit art on hole background
 - [ ] Suit art on front facing cards
 - [ ] Waste Stock movement
 - [ ] No action Text, no undo, cant drop
-- [ ] Action text with count
-- [ ] reveal card
 - [ ] empty text dedup
+- [ ] undo reveal card
+- [ ] New game
+- [+] close side menu
+- [ ] confirm new game
+- [ ] new game flash alert
+- [+] shuffle cards
+- [+] actual start new game
+- [ ] Stats
+- [ ] stats reveal, empty, f2f, w2f, hole, undo
+- [ ] Help
+- [ ] Settings
+- [ ] Main menu
 
+- [ ] click on release

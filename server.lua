@@ -406,7 +406,8 @@ function SolitaireServer:send(msg)
     
   if cmd == 'newgame' then
 
-    print('new game')
+    self.solitaire = OSolitaire(deck)
+    self:message('newgame', self.solitaire:write())
 
   elseif cmd == 'undo' then
 

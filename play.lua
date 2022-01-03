@@ -180,9 +180,14 @@ function CardStack:add(cardpos)
   table.insert(self.cards, card)
 end
 
+function CardStack:addasis(card)
+  card:add_to_stack(self.pos.x, self.pos.y, #self.cards * self.margin)
+  table.insert(self.cards, card)
+end
+
 function CardStack:update(dt)
   for i, card in ipairs(self.cards) do
-    card:update_card_pos(dt)
+    card:update(dt)
   end
 end
 
@@ -240,7 +245,7 @@ function Foundation:reveal(card)
   local target_pos = self.downturned:top_target_pos()
 
   self.upturned:smooth_move(target_pos.x, target_pos.y)
-  self.upturned:add(RevealCard(card, reveal_at_pos))
+  self.upturned:addasis(RevealCard(card, reveal_at_pos))
 end
 
 function Foundation:drag_cancel(stack)
@@ -343,10 +348,13 @@ function Stock:init(solitaire, x, y)
   self.logic = solitaire.logic
   self:init_pos(Vector(x, y))
   self.visual = StillCard(BackCard(), self.pos)
+
+  self.cards = CardStack(x, y, 0) 
 end
 
 function Stock:add_stack(stack)
-  -- TODO
+  -- TODO stock waste remove
+  self.cards:paste(stack.cards)
 end
 
 function Stock:click_test(x, y)
@@ -361,11 +369,13 @@ function Stock:maybe_click(x, y)
 end
 
 function Stock:update(dt)
+  self.cards:update(dt)
   self.visual:update(dt)
 end
 
 function Stock:draw()
-  self.visual:draw()
+  self.cards:draw()
+  --self.visual:draw()
 end
 
 
@@ -473,7 +483,11 @@ function RevealCard:update(dt)
 end
 
 function RevealCard:draw(pass)
-  self.anim:draw(sprites, math.round(self.pos.x), math.round(self.pos.y))
+  if self.idle then
+    self:draw_card_pos(pass)
+  else
+    self.anim:draw(sprites, math.round(self.pos.x), math.round(self.pos.y))
+  end
 end
 
 
@@ -528,18 +542,29 @@ end
 
 
 ShuffleUpAndSolitaire = Object:extend()
-function ShuffleUpAndSolitaire:init()
-  self.solitaire = Solitaire()
+function ShuffleUpAndSolitaire:init(logic, data)
+  self.solitaire = Solitaire(logic, function()
+    self.sidemenu:show()
+  end)
+
+
+  self.sidemenu = SideMenu(self.solitaire)
+  self.md = MouseDraw(self.solitaire, self.sidemenu)
+
 
   self.sc = {}
 
   self.t = Trigger()
 
-  for i = 1,7 do
+  for fi = 1,7 do
+    local fs = data[fi]
+    local foun = self.solitaire.foundations[fi]
+    local hidden = fs[1]
+
     local max_delay = 0
 
-    for j = 1, i do
-      local delay = random:float(0.4, 0.6 + (1-i/7) * 0.4)
+    for j = 1, hidden+1 do
+      local delay = random:float(0.4, 0.6 + (1-fi/7) * 0.4)
       if delay > max_delay then
         max_delay = delay
       end
@@ -547,23 +572,32 @@ function ShuffleUpAndSolitaire:init()
 
       self.t:after(delay, function ()
         local cardpos = table.remove(self.sc)
-        self.solitaire.foundations[i]:add_hidden(cardpos)
+        foun:add_hidden(cardpos)
       end)
     end 
-    self.t:after(max_delay + 0.2, function ()
-      self.solitaire.foundations[i]:reveal(UpCard(4, 12))
-    end)
+
+    for i=2,#fs, 2 do
+      local suit, rank = fs[i], fs[i+1]
+      self.t:after(max_delay + 0.2, function ()
+        foun:reveal(UpCard(suit, rank))
+      end)
+    end
   end
 
   -- 28 24
   for i = 1, 24 do
-
     table.insert(self.sc, ShuffleCard(BackCard()))
+  end
 
-    self.t:after(random:float(0.4, 0.6 + (1-i/24)*0.5), function()
-      local cardpos = table.remove(self.sc)
+  for i = 1, 4 do
+    self.t:after(random:float(0.4, 0.6 + (1-i/4)*0.5), function()
+      local tmp = {}
+      for j=1,6 do
+        local cardpos = table.remove(self.sc)
+        table.insert(tmp, cardpos)
+      end
 
-      self.solitaire.stock:add(cardpos)
+      self.solitaire.stock:add_stack(OCardStack(tmp))
     end)
   end
 end
@@ -577,6 +611,9 @@ function ShuffleUpAndSolitaire:update(dt)
   for _, sc in ipairs(self.sc) do
     sc:update(dt)
   end
+
+  self.sidemenu:update(dt)
+  self.md:update(dt)
 end
 
 
@@ -589,6 +626,8 @@ function ShuffleUpAndSolitaire:draw()
     sc:draw()
   end
 
+  self.sidemenu:draw()
+  self.md:draw()
 end
 
 
@@ -600,6 +639,8 @@ function LoadSolitaire:init(logic, data)
   end)
   self.sidemenu = SideMenu(self.solitaire)
   self.md = MouseDraw(self.solitaire, self.sidemenu)
+
+
   for fi=1,7 do
     local fs = data[fi]
     local foun = self.solitaire.foundations[fi]
@@ -1275,7 +1316,8 @@ end
 SolitaireLogic = Object:extend()
 function SolitaireLogic:init(server)
   self.server = server
-  self.scene = ShuffleUpAndSolitaire()
+  -- TODO handle nil scene eg. loading scene
+  self.scene = nil
   self.server:get()
 end
 
@@ -1295,7 +1337,11 @@ function SolitaireLogic:update(dt)
     local cmd, args = data:match("^(%a*) ?(.*)")
     print(cmd, args)
 
-    if cmd == 'undo' then
+    if cmd == 'newgame' then
+
+      self:in_newgame(read_data(args))
+
+    elseif cmd == 'undo' then
       if args == 'no' then
         print('undo no')
         return
@@ -1379,6 +1425,10 @@ end
 
 function SolitaireLogic:in_load(data)
   self.scene = LoadSolitaire(self, data)
+end
+
+function SolitaireLogic:in_newgame(data)
+  self.scene = ShuffleUpAndSolitaire(self, data)
 end
 
 function SolitaireLogic:in_drop(oreveal)
@@ -1527,27 +1577,27 @@ function SideMenu:init(solitaire)
   self.group = {}
 
 
-  SideButton(self, 0, 160, "close", function()
+  SideButton(self, 1, 160, "close", function()
     self:hide()
   end)
 
 
-  SideButton(self, 0, 140, "help", function()
+  SideButton(self, 1, 140, "help", function()
   end)
   
 
-  SideButton(self, 0, 120, "settings", function()
+  SideButton(self, 1, 120, "settings", function()
   end)
   
 
-  SideButton(self, 0, 100, "new game", function()
+  SideButton(self, 1, 100, "new game", function()
     self.logic:out_newgame()
   end)
 
-  SideButton(self, 0, 80, "statistics", function()
+  SideButton(self, 1, 80, "statistics", function()
   end)
 
-  SideButton(self, 0, 60, "main menu", function()
+  SideButton(self, 1, 60, "main menu", function()
   end)
 
 
@@ -1597,8 +1647,11 @@ function SideMenu:draw()
 
   graphics.push(0, 0)
   graphics.translate(-60+self.w)
-  graphics.rectangle(0, 0, 60, 180, 0, 0, colors.black)
-  graphics.print('solitaire', font, 2, 2, 0, 1, 1, 0, 0, colors.white)
+  graphics.rectangle(0, 0, 61, 180, 0, 0, colors.black)
+  graphics.rectangle(0, 0, 1, 180, 0, 0, colors.white)
+  --graphics.rectangle(60, 0, 1, 180, 0, 0, colors.white)
+
+  graphics.print('solitaire', font, 4, 2, 0, 1, 1, 0, 0, colors.white)
 
   for _, obj in ipairs(self.group) do
     obj:draw()
