@@ -637,8 +637,9 @@ function LoadSolitaire:init(logic, data)
   self.solitaire = Solitaire(logic, function()
     self.sidemenu:show()
   end)
-  self.sidemenu = SideMenu(self.solitaire)
-  self.md = MouseDraw(self.solitaire, self.sidemenu)
+  self.overlays = Overlays(logic)
+  self.sidemenu = SideMenu(self.solitaire, self.overlays)
+  self.md = MouseDraw(self.solitaire, self.sidemenu, self.overlays)
 
 
   for fi=1,7 do
@@ -688,6 +689,7 @@ end
 function LoadSolitaire:update(dt)
   self.sidemenu:update(dt)
   self.solitaire:update(dt)
+  self.overlays:update(dt)
   self.md:update(dt)
 end
 
@@ -695,6 +697,7 @@ end
 function LoadSolitaire:draw()
   self.solitaire:draw()
   self.sidemenu:draw()
+  self.overlays:draw()
   self.md:draw()
 end
 
@@ -1086,7 +1089,7 @@ end
 
 MouseDraw = Object:extend()
 MouseDraw:implement(HasPos)
-function MouseDraw:init(drag, menu)
+function MouseDraw:init(drag, menu, overlays)
   local x, y = Mouse.x, Mouse.y
   self:init_pos(Vector(x, y))
   self.anim = anim8.newAnimation(g128('1-2', 1), 1)
@@ -1094,9 +1097,14 @@ function MouseDraw:init(drag, menu)
 
   self.drag = drag
   self.menu = menu
+  self.overlays = overlays
 end
 
 function MouseDraw:drag_start()
+  if self.overlays:capture_mouse() then
+    self.overlays:click(Mouse.x, Mouse.y)
+    return
+  end
   if self.menu:capture_mouse() then
     self.menu:click(Mouse.x, Mouse.y)
     return
@@ -1576,7 +1584,7 @@ function Undo:draw()
 end
 
 SideMenu = Object:extend()
-function SideMenu:init(solitaire)
+function SideMenu:init(solitaire, overlays)
 
 
   self.w = 0
@@ -1600,6 +1608,8 @@ function SideMenu:init(solitaire)
   
 
   SideButton(self, 1, 120, "settings", function()
+    self:hide()
+    overlays:show()
   end)
   
 
@@ -1698,6 +1708,9 @@ function SideButton:maybe_click(x, y)
 
 end
 
+function SideButton:maybe_click_cancel(x, y)
+end
+
 function SideButton:update(dt)
   self.t:update(dt)
   if self.menu:capture_mouse() then
@@ -1728,6 +1741,269 @@ function SideButton:draw()
   graphics.print(self.text, font, x+2, y, 0, 1, 1, 0, 0, text_color)
 
 end
+
+Overlays = Object:extend()
+function Overlays:init(logic)
+ self.settings = SettingsMenu(logic, 100, 20, function()
+   self.active = nil
+ end) 
+
+ self.active = nil
+end
+
+function Overlays:capture_mouse()
+  return self.active ~= nil
+end
+
+
+function Overlays:click(x, y)
+  if self.active ~= nil then
+    self.active:click(x, y)
+  end
+end
+
+
+
+function Overlays:show()
+  self.active = self.settings
+  self.active:show(true)
+end
+
+function Overlays:update(dt)
+
+  if self.active ~= nil then
+    self.active:update(dt)
+  end
+
+end
+
+
+function Overlays:draw()
+
+  if self.active ~= nil then
+    self.active:draw()
+  end
+end
+
+
+
+SettingsMenu = Object:extend()
+SettingsMenu:implement(HasPos)
+function SettingsMenu:init(logic, x, y, onhide)
+  self:init_pos(Vector(x, y))
+  self.logic = logic
+
+  self.group = {}
+
+  self.active = false
+  SideButton(self, x + 60, y + 106, "close", onhide)
+
+
+  SettingsSelectBox(self, x + 10, y + 30 + 18 * 0, "deal type:", {
+    "3 cards",
+    "1 card"
+  }, function(value) print(value) end)
+
+  SettingsSelectBox(self, x + 10, y + 30 + 18 * 1, "pass type:", {
+    "single",
+    "three",
+    "no limit"
+  }, function(value) print(value) end)
+
+
+  SettingsSelectBox(self, x + 10, y + 30 + 18 * 2, "show help:", {
+    "yes",
+    "no"
+  }, function(value) print(value) end)
+
+
+end
+
+function SettingsMenu:capture_mouse()
+  return self.active
+end
+
+function SettingsMenu:click(x, y)
+  for _, obj in ipairs(self.group) do
+    if obj:maybe_click(x, y) then
+      break
+    end
+  end
+  for _, obj in ipairs(self.group) do
+    obj:maybe_click_cancel(x, y)
+  end
+end
+
+function SettingsMenu:show(active)
+  self.active = active or false
+end
+
+function SettingsMenu:update(dt)
+  for _, obj in ipairs(self.group) do
+    obj:update(dt)
+  end
+end
+
+function SettingsMenu:draw()
+
+  bg_shader:set()
+  love.graphics.draw(noisetex, 0, 0)
+  bg_shader:unset()
+
+  local x, y = math.round(self.pos.x), math.round(self.pos.y)
+
+  graphics.rectangle(x, y, 120, 120, 0, 0, colors.black)
+
+  graphics.print('settings', font, x + 2, y + 2, 0, 1, 1, 0, 0, colors.white)
+
+  for _, obj in ipairs(self.group) do
+    obj:draw(1)
+  end
+
+
+  for _, obj in ipairs(self.group) do
+    obj:draw(2)
+  end
+end
+
+
+
+SettingsSelectBox = Object:extend()
+SettingsSelectBox:implement(HasPos)
+function SettingsSelectBox:init(menu, x, y, text, options, onselect)
+  self:init_pos(Vector(x, y))
+  self.text = text
+
+  self.menu = menu
+  table.insert(menu.group, self)
+
+  self.dropdown = DropdownOptions(x + 48, y, options, onselect)
+end
+
+function SettingsSelectBox:maybe_click(x, y)
+  return self.dropdown:maybe_click(x, y)
+end
+
+function SettingsSelectBox:maybe_click_cancel(x, y)
+  return self.dropdown:maybe_click_cancel(x, y)
+end
+
+function SettingsSelectBox:update(dt)
+  self.dropdown:update(dt)
+end
+
+function SettingsSelectBox:draw(pass)
+  local x, y = math.round(self.pos.x), math.round(self.pos.y)
+
+  graphics.print(self.text, font, x+2, y, 0, 1, 1, 0, 0, colors.white)
+  self.dropdown:draw(pass)
+end
+
+DropdownOptions = Object:extend()
+DropdownOptions:implement(HasPos)
+function DropdownOptions:init(x, y, options, onselect)
+  self:init_pos(Vector(x, y))
+  
+  self.options = options
+
+
+  self.anim = anim8.newAnimation(g5(1, 1), 1)
+
+  self.onselect = onselect
+  self.selected = 1
+  self.hover = nil
+
+  self.i = 0
+  self.t = Trigger()
+
+  self.width = 42
+end
+
+function DropdownOptions:maybe_click(x, y)
+  if self.i == 1 then
+
+    for i, opt in ipairs(self.options) do
+      if hit_test_rect(self.pos.x + 2, self.pos.y + 10 * i,
+        self.width, 10, x, y) then
+        self.selected = i
+        self.onselect(self.selected)
+        return true
+      end
+    end
+
+
+    return true
+  end
+
+  if hit_test_rect_big(self.pos.x,
+    self.pos.y-2, self.width, 10, x, y) then
+
+    self.t:tween(0.3, self, { i=1 }, math.sine_out, function() 
+      self.i = 1
+    end, 'dropdown')
+    return true
+  else
+    self.t:tween(0, self, { i = 0 }, math.sine_out, function()
+      self.i = 0
+    end, 'dropdown')
+    return false
+  end
+end
+
+function DropdownOptions:maybe_click_cancel(x, y)
+
+  if hit_test_rect_big(self.pos.x,
+    self.pos.y-2, self.width, 10, x, y) then
+  else
+    self.t:tween(0, self, { i = 0 }, math.sine_out, function()
+      self.i = 0
+    end, 'dropdown')
+  end
+
+end
+
+function DropdownOptions:update(dt)
+  local x, y = self.pos.x, self.pos.y
+  self.t:update(dt)
+  if self.i == 1 then
+    self.hover = nil
+    for i, opt in ipairs(self.options) do
+      if hit_test_rect(x + 2, y + 10 * i,
+        self.width, 10, Mouse.x, Mouse.y) then
+        self.hover = i
+      end
+    end
+  end
+end
+
+function DropdownOptions:draw(pass)
+
+  local x, y = math.round(self.pos.x), math.round(self.pos.y)
+
+  if pass == 1 then
+    graphics.rectangle(x, y-2, self.width, 10, 0, 0, colors.white, 1)
+    self.anim:draw(sprites, x + self.width - 8, y)
+
+    graphics.print(self.options[self.selected], font, x + 2, y, 0, 1, 1, 0, 0, colors.white)
+
+  else
+
+    if self.i == 1 then
+      graphics.rectangle(x, y - 2, self.width, 6 + (5 + 10 * #self.options) * self.i, 0, 0, colors.black)
+      graphics.rectangle(x, y - 2, self.width, 6 + (5 + 10 * #self.options) * self.i, 0, 0, colors.white, 1)
+      for i, opt in ipairs(self.options) do
+        local text_color = self.hover == i and colors.black or colors.white
+        local bg_color = self.hover == i and colors.white or colors.black
+        graphics.rectangle(x + 1, y - 1 + 10 * i, self.width - 3, 8, 0, 0, bg_color)
+        graphics.print(opt, font, x + 2, y + 10 * i, 0, 1, 1, 0, 0, text_color)
+      end
+    elseif self.i > 0 then
+      graphics.rectangle(x, y - 2, self.width, 6 + (5 + 10 * #self.options) * self.i, 0, 0, colors.black)
+      graphics.rectangle(x, y - 2, self.width, 5 + (5 + 10 * #self.options) * self.i, 0, 0, colors.white, 1)
+    end
+  end
+end
+
 
 Play = Object:extend()
 

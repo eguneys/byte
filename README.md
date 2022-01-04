@@ -40,6 +40,8 @@
 - [ ] No action Text, no undo, cant drop
 - [ ] empty text dedup
 - [ ] undo reveal card
+- [ ] better titles
+- [ ] popup menu fade in
 - [ ] New game
 - [+] close side menu
 - [ ] confirm new game
