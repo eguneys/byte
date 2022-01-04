@@ -23,8 +23,8 @@
 - [.] Can Drop at Foundation
 - [ ] Can Drop at Hole
 - [ ] Can Drag from Foundation
-- [ ] Drop H to F
-- [ ] Undo H to F
+- [+] Drop H to F
+- [+] Undo H to F
 - [ ] Can redeal
 - [ ] Deal count setting
 

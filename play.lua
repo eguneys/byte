@@ -816,6 +816,19 @@ function Solitaire:in_undo(orig_data, dest_data, has_reveal)
 
   local stack
 
+  if f_index == 9 then
+    f_index, stack_index = math.floor(orig_data / 100), (orig_data - 900) / 10
+    dest_index = math.floor(dest_data / 100)
+
+
+    stack = self.foundations[dest_index]:remove_stack(1)
+
+
+    self.holes[stack_index]:add_cards(stack.cards)
+
+    return
+  end
+
   if dest_index == 9 then
     stack = self.holes[hole_index]:remove_stack(stack_index)
   else

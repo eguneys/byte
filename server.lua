@@ -199,6 +199,10 @@ function OHole:cut(nb)
   return self.stack:cut(nb)
 end
 
+function OHole:uncut(stack)
+  self.stack:append(stack)
+end
+
 function OHole:paste(stack)
   self.stack:append(stack)
 end
@@ -324,6 +328,21 @@ function OSolitaire:_undrop(orig_data, dest_data, has_reveal)
 
   local stack
 
+  -- h to f
+  if f_index == 9 then
+    f_index, stack_index = math.floor(orig_data / 100), (orig_data - 900) / 10
+    dest_index = math.floor(dest_data / 100)
+
+
+    stack = self.fs[dest_index]:cut(1)
+
+    self.holes[stack_index]:uncut(stack)
+
+    return
+  else
+
+
+  end
   if dest_index == 9 then
     stack = self.holes[hole_index]:cut(stack_index)
   else
@@ -344,7 +363,22 @@ function OSolitaire:drop(orig_data, dest_data)
   local dest_index, hole_index = math.floor(dest_data / 100), (dest_data - 900) / 10
 
   if f_index == 9 then
-    return 'no'
+
+    f_index, stack_index = math.floor(orig_data / 100), (orig_data - 900) / 10
+    dest_index = math.floor(dest_data / 100)
+
+    if dest_index == 9 then
+      return 'no'
+    end
+
+    print(f_index, stack_index)
+ 
+    local stack = self.holes[stack_index]:cut(1)
+    self.fs[dest_index]:paste(stack)
+
+    table.insert(self.undo_stack, { orig_data, dest_data })
+    return 'ok'
+
   elseif f_index == 8 then
     if dest_index == 9 then
       return 'no'
