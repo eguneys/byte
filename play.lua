@@ -1802,19 +1802,19 @@ function SettingsMenu:init(logic, x, y, onhide)
   SettingsSelectBox(self, x + 10, y + 30 + 18 * 0, "deal type:", {
     "3 cards",
     "1 card"
-  }, function(value) print(value) end)
+  }, function(value) end)
 
   SettingsSelectBox(self, x + 10, y + 30 + 18 * 1, "pass type:", {
     "single",
     "three",
     "no limit"
-  }, function(value) print(value) end)
+  }, function(value) end)
 
 
   SettingsSelectBox(self, x + 10, y + 30 + 18 * 2, "show help:", {
     "yes",
     "no"
-  }, function(value) print(value) end)
+  }, function(value) end)
 
 
 end
@@ -1920,30 +1920,20 @@ function DropdownOptions:init(x, y, options, onselect)
 end
 
 function DropdownOptions:maybe_click(x, y)
-  if self.i == 1 then
-
-    for i, opt in ipairs(self.options) do
-      if hit_test_rect(self.pos.x + 2, self.pos.y + 10 * i,
-        self.width, 10, x, y) then
-        self.selected = i
-        self.onselect(self.selected)
-        return true
-      end
-    end
-
-
+  if self.i == 1 and self.hover ~= nil then
+    self.selected = self.hover
+    self.onselect(self.selected)
     return true
   end
 
   if hit_test_rect_big(self.pos.x,
     self.pos.y-2, self.width, 10, x, y) then
-
     self.t:tween(0.3, self, { i=1 }, math.sine_out, function() 
       self.i = 1
     end, 'dropdown')
     return true
   else
-    self.t:tween(0, self, { i = 0 }, math.sine_out, function()
+    self.t:tween(0.01, self, { i = 0 }, math.sine_out, function()
       self.i = 0
     end, 'dropdown')
     return false
@@ -1952,10 +1942,10 @@ end
 
 function DropdownOptions:maybe_click_cancel(x, y)
 
-  if hit_test_rect_big(self.pos.x,
+  if hit_test_rect(self.pos.x,
     self.pos.y-2, self.width, 10, x, y) then
   else
-    self.t:tween(0, self, { i = 0 }, math.sine_out, function()
+    self.t:tween(0.01, self, { i = 0 }, math.sine_out, function()
       self.i = 0
     end, 'dropdown')
   end
@@ -1965,10 +1955,10 @@ end
 function DropdownOptions:update(dt)
   local x, y = self.pos.x, self.pos.y
   self.t:update(dt)
+  self.hover = nil
   if self.i == 1 then
-    self.hover = nil
     for i, opt in ipairs(self.options) do
-      if hit_test_rect(x + 2, y + 10 * i,
+      if hit_test_rect(x + 2, -2 + y + 10 * i,
         self.width, 10, Mouse.x, Mouse.y) then
         self.hover = i
       end
