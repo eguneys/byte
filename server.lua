@@ -226,6 +226,22 @@ function OWaste:pop()
   return self.stack:pop(1)
 end
 
+function OWaste:collect()
+
+  table.insert(self.waste, self.stack)
+  local res = self.waste
+
+  self.waste = OCardStack({})
+  self.stack = OCardStack({})
+
+  return res
+end
+
+function OWaste:uncollect(waste)
+  self.stack = table.remove(waste)
+  self.waste = waste
+end
+
 function OWaste:deal_stack(cards)
   table.insert(self.waste, self.stack)
   self.stack = OCardStack(cards)
@@ -292,6 +308,11 @@ function OSolitaire:undo()
   if undo[1] == 'deal' then
     local stack = self:_undeal()
     return 'deal' .. ' ' .. OCardStack(stack):write() 
+  elseif undo[1] == 'collect' then
+    local waste = undo[2]
+
+    local stack = self:_uncollect(waste)
+    return 'collect' .. ' ' .. OCardStack(stack):write()
   end
 
   local orig_data, dest_data, oreveal = unpack(undo)
@@ -304,15 +325,39 @@ function OSolitaire:undo()
 
 end
 
+function OSolitaire:collect()
+  if self.stock:is_empty() then
+    local waste = self.waste:collect()
+
+
+    for i=#waste,1,-1 do
+      local stack = waste[i]
+      self.stock:append(stack.cards)
+    end
+
+    table.insert(self.undo_stack, { 'collect', waste })
+
+    return self.stock:size()
+  end
+  return 'no'
+end
+
 function OSolitaire:deal()
   if not self.stock:is_empty() then
-    local res = self.stock:pop(3)
+    local res = self.stock:pop(math.min(self.stock:size(), 3))
     self.waste:deal_stack(res)
 
     table.insert(self.undo_stack, { 'deal' })
 
     return res
   end
+end
+
+function OSolitaire:_uncollect(waste)
+  self.waste:uncollect(waste)
+  self.stock:cut(self.stock:size())
+
+  return self.waste:peek()
 end
 
 function OSolitaire:_undeal()
@@ -448,6 +493,9 @@ function SolitaireServer:send(msg)
     local res, undo_data = self.solitaire:undo()
     self:message('undo', res, undo_data)
 
+  elseif cmd == 'collect' then
+    local nb = self.solitaire:collect()
+    self:message('collect', nb)
   elseif cmd == 'deal' then
     local owaste = self.solitaire:deal()
     if owaste == nil then

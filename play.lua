@@ -313,7 +313,9 @@ function Waste:remove_stack(nb)
 end
 
 function Waste:remove_all()
-  return self.cards:cut(self.cards:size())
+  if not self.cards:is_empty() then
+    return self.cards:cut(self.cards:size())
+  end
 end
 
 function Waste:add_stack(stack)
@@ -366,6 +368,7 @@ function Stock:init(solitaire, x, y)
 end
 
 function Stock:add_stack(stack)
+  self.up_i = -1
   -- TODO stock waste remove
   self.cards:paste(table_map(stack.cards, function(cardpos)
     return StillCard(BackCard(), cardpos.pos)
@@ -376,13 +379,23 @@ function Stock:remove_stack(nb)
   self.cards:cut(nb)
 end
 
+function Stock:remove_all()
+  if not self.cards:is_empty() then
+    self.cards:cut(self.cards:size())
+  end
+end
+
 function Stock:click_test(x, y)
   return hit_test_rect(self.pos.x, self.pos.y, 30, 40, x, y)
 end
 
 function Stock:maybe_click(x, y)
   if self:click_test(x, y) then
-    self.logic:out_deal()
+    if self.up_i == -1 then
+      self.logic:out_deal()
+    else
+      self.logic:out_collect()
+    end
     return true
   end
 end
@@ -851,6 +864,28 @@ function Solitaire:drag_stop(x, y)
       self.ds = nil
     end
   end
+end
+
+function Solitaire:in_collect(nb)
+
+  local tmp = CardStack()
+  for i=1,nb do
+    tmp:add(StillCard(BackCard(), self.waste.pos))
+  end
+  self.waste:remove_all()
+  self.stock:add_stack(tmp)
+
+  ActionText(self.effects, self.stock.pos.x, self.stock.pos.y, a_deal)
+end
+
+function Solitaire:in_undo_collect(waste)
+
+  self.stock:remove_all()
+  self.waste:set(table_map(waste, function (oc) 
+    return RevealCard(UpCard(oc[1], oc[2]), self.stock.pos)
+  end))
+
+  ActionText(self.effects, self.stock.pos.x, self.stock.pos.y, a_undo)
 end
 
 function Solitaire:in_undo_deal(waste)
@@ -1431,16 +1466,27 @@ function SolitaireLogic:update(dt)
       local undo_data = read_spaces(args)
 
       local ok, orig_data, dest_data, has_reveal = unpack(undo_data)
-
       if ok == 'deal' then
 
         -- split deal and card stack
         local cmd, wastestr = args:match("^(%a*) ?(.*)")
         local waste = read_stack(wastestr)
         self:in_undo_deal(waste)
+      elseif ok == 'collect' then
+
+        local cmd, wastestr = args:match("^(%a*) ?(.*)")
+        local waste = read_stack(wastestr)
+        self:in_undo_collect(waste)
       elseif ok == 'ok' then
         self:in_undo(orig_data, dest_data, has_reveal == 'reveal')
       end
+    elseif cmd == 'collect' then
+
+      if args == 'no' then
+        print('collect no')
+        return
+      end
+      self:in_collect(args)
     elseif cmd == 'deal' then
       if args == 'no' then
         -- TODO in deal no
@@ -1490,6 +1536,11 @@ function SolitaireLogic:out_deal()
   self.server:send('deal')
 end
 
+function SolitaireLogic:out_collect()
+  self.server:send('collect')
+end
+
+
 function SolitaireLogic:in_undo(orig_data, dest_data, has_reveal)
   self.scene.solitaire:in_undo(orig_data, dest_data, has_reveal)
 end
@@ -1498,8 +1549,18 @@ function SolitaireLogic:in_undo_deal(waste)
   self.scene.solitaire:in_undo_deal(waste)
 end
 
+
+function SolitaireLogic:in_undo_collect(nb)
+  self.scene.solitaire:in_undo_collect(nb)
+end
+
+
 function SolitaireLogic:in_deal(waste)
   self.scene.solitaire:in_deal(waste)
+end
+
+function SolitaireLogic:in_collect(nb)
+  self.scene.solitaire:in_collect(nb)
 end
 
 function SolitaireLogic:in_load(data)

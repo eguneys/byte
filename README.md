@@ -31,6 +31,7 @@
 
 - [ ] Hole to Foundation shadow back
 - [+] reveal card
+- [ ] collect action text
 - [ ] ui button shadow on hover; undo, redeal
 - [ ] Art for pass type; single, 3, no limit
 - [ ] load solitaire add stock cards
