@@ -414,7 +414,7 @@ function OSolitaire:write()
   table_map(self.fs, fn_write), ';') .. ';' ..
   table.concat(
   table_map(self.holes, fn_write), ';') .. ';' ..
-  OCardStack(self.waste:peek(3)):write()
+  self.stock:size() .. ' ' .. OCardStack(self.waste:peek(3)):write()
 end
 
 SolitaireServer = Object:extend()

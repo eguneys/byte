@@ -20,23 +20,27 @@
 - [+] Undo Drop W to F
 - [+] Load Waste, dont allow extra access
 - [+] Shuffle Deck, new game
+- [@] Can redeal
 - [.] Can Drop at Foundation
 - [ ] Can Drop at Hole
 - [ ] Can Drag from Foundation
 - [+] Drop H to F
 - [+] Undo H to F
-- [ ] Can redeal
-- [ ] Deal count setting
+- [+] Deal count setting
 
 
 - [ ] Hole to Foundation shadow back
 - [+] reveal card
+- [ ] ui button shadow on hover; undo, redeal
+- [ ] Art for pass type; single, 3, no limit
+- [ ] load solitaire add stock cards
+- [ ] card dissapear animation on new game
 - [ ] Menu, stats, help, settings, main menu, new game, 
 - [ ] Empty Stock Art
 - [ ] Cant Deal Art
 - [+] Suit art on hole background
 - [ ] Suit art on front facing cards
-- [ ] Waste Stock movement
+- [+] Waste Stock movement
 - [ ] No action Text, no undo, cant drop
 - [ ] empty text dedup
 - [ ] undo reveal card

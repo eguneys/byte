@@ -104,6 +104,10 @@ function CardStack:is_empty()
   return #self.cards == 0
 end
 
+function CardStack:size()
+  return #self.cards
+end
+
 
 function CardStack:remove()
   return table.remove(self.cards)
@@ -308,6 +312,10 @@ function Waste:remove_stack(nb)
   return self.cards:cut(nb)
 end
 
+function Waste:remove_all()
+  return self.cards:cut(self.cards:size())
+end
+
 function Waste:add_stack(stack)
   return self.cards:paste(stack.cards)
 end
@@ -349,12 +357,23 @@ function Stock:init(solitaire, x, y)
   self:init_pos(Vector(x, y))
   self.visual = StillCard(BackCard(), self.pos)
 
+  self.up_anim = anim8.newAnimation(g1212(9, 1), 1)
+  self.up_shadow = anim8.newAnimation(g1212(10, 1), 1)
+
+  self.up_i = -1
+
   self.cards = CardStack(x, y, 0) 
 end
 
 function Stock:add_stack(stack)
   -- TODO stock waste remove
-  self.cards:paste(stack.cards)
+  self.cards:paste(table_map(stack.cards, function(cardpos)
+    return StillCard(BackCard(), cardpos.pos)
+  end))
+end
+
+function Stock:remove_stack(nb)
+  self.cards:cut(nb)
 end
 
 function Stock:click_test(x, y)
@@ -369,13 +388,34 @@ function Stock:maybe_click(x, y)
 end
 
 function Stock:update(dt)
+
+  if self.up_i == -1 then
+    if self.cards:size() == 0 then
+      self.up_i = 0
+    end
+  end
+
+  if self.up_i >= 0 then
+    self.up_i = self.up_i + dt
+  end
+
   self.cards:update(dt)
   self.visual:update(dt)
 end
 
 function Stock:draw()
+
   self.cards:draw()
-  --self.visual:draw()
+  
+  if self.up_i > 0 then
+    local up_off = (self.up_i % ticks.second) / ticks.second
+    local x, y = math.round(self.pos.x + 8.5),
+    math.round(self.pos.y + 24 - up_off * 8)
+
+
+    self.up_shadow:draw(sprites, x+1, y+1)
+    self.up_anim:draw(sprites, x, y)
+  end
 end
 
 
@@ -547,9 +587,9 @@ function ShuffleUpAndSolitaire:init(logic, data)
     self.sidemenu:show()
   end)
 
-
-  self.sidemenu = SideMenu(self.solitaire)
-  self.md = MouseDraw(self.solitaire, self.sidemenu)
+  self.overlays = Overlays(logic)
+  self.sidemenu = SideMenu(self.solitaire, self.overlays)
+  self.md = MouseDraw(self.solitaire, self.sidemenu, self.overlays)
 
 
   self.sc = {}
@@ -606,12 +646,13 @@ end
 function ShuffleUpAndSolitaire:update(dt)
 
   self.t:update(dt)
-  self.solitaire:update(dt)
 
   for _, sc in ipairs(self.sc) do
     sc:update(dt)
   end
 
+  self.solitaire:update(dt)
+  self.overlays:update(dt)
   self.sidemenu:update(dt)
   self.md:update(dt)
 end
@@ -627,6 +668,7 @@ function ShuffleUpAndSolitaire:draw()
   end
 
   self.sidemenu:draw()
+  self.overlays:draw()
   self.md:draw()
 end
 
@@ -640,7 +682,6 @@ function LoadSolitaire:init(logic, data)
   self.overlays = Overlays(logic)
   self.sidemenu = SideMenu(self.solitaire, self.overlays)
   self.md = MouseDraw(self.solitaire, self.sidemenu, self.overlays)
-
 
   for fi=1,7 do
     local fs = data[fi]
@@ -656,6 +697,7 @@ function LoadSolitaire:init(logic, data)
     for i=2,#fs, 2 do
       local suit, rank = fs[i], fs[i+1]
       foun:add_upturned(StillCard(UpCard(suit, rank), foun.downturned.pos))
+
     end
   end
 
@@ -668,21 +710,30 @@ function LoadSolitaire:init(logic, data)
     local cards = {}
     for rank=1,hs do
       table.insert(cards, StillCard(UpCard(hole.suit, rank), Vector(hole.pos.x, hole.pos.y - 8)))
+
     end
 
     hole:add_cards(cards)
   end
 
   local waste = data[12]
+  local left = waste[1]
   if waste ~= nil then
     local tmp = {}
-    for i=1,#waste, 2 do
+    for i=2,#waste, 2 do
       local suit, rank = waste[i], waste[i+1]
-      table.insert(tmp, StillCard(UpCard(suit, rank), self.solitaire.stock.pos))
+      table.insert(tmp, StillCard(UpCard(suit, rank), self.solitaire.waste.pos))
     end
 
     self.solitaire.waste:add_stack(OCardStack(tmp))
   end
+
+
+  local tmp = {}
+  for j=1,left do
+    table.insert(tmp, StillCard(BackCard(), self.solitaire.stock.pos))
+  end
+  self.solitaire.stock:add_stack(OCardStack(tmp))
 
 end
 
@@ -804,9 +855,12 @@ end
 
 function Solitaire:in_undo_deal(waste)
 
+  self.stock:add_stack(self.waste:remove_all())
+
   self.waste:set(table_map(waste, function (oc) 
     return RevealCard(UpCard(oc[1], oc[2]), self.stock.pos)
   end))
+
 
 
   ActionText(self.effects, self.stock.pos.x, self.stock.pos.y, a_undo)
@@ -853,6 +907,8 @@ function Solitaire:in_deal(waste)
     return RevealCard(UpCard(oc[1], oc[2]), self.stock.pos)
   end))
 
+  self.stock:remove_stack(#waste)
+
   ActionText(self.effects, self.stock.pos.x, self.stock.pos.y, a_deal)
 end
 
@@ -877,6 +933,8 @@ end
 function Solitaire:goto_menu()
   self.onmenu()
 end
+
+
 
 
 function Solitaire:update(dt)
